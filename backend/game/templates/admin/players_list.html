@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Players Management - Admin Panel</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            color: #2d3748;
+        }
+        .sidebar {
+            width: 260px;
+            background: #0f172a;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: hidden;
+            z-index: 1000;
+        }
+
+        .sidebar-menu-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+            padding: 12px 0;
+        }
+
+        .sidebar-menu-wrapper::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-menu-wrapper::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar-menu-wrapper::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .sidebar-menu-wrapper::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+                .sidebar-header .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .sidebar-header .logo-icon {
+            font-size: 24px;
+        }
+        
+        .sidebar-header .subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            font-weight: 400;
+            margin-top: 4px;
+        }
+        
+        .menu-section {
+            margin-bottom: 24px;
+        }
+        
+        .menu-section-title {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 8px 20px;
+            margin-bottom: 4px;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .sidebar-menu li {
+            margin: 0;
+        }
+        
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+            position: relative;
+        }
+        
+        .sidebar-menu a:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .sidebar-menu a.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .sidebar-menu a.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #00CED1;
+        }
+        
+        .sidebar-menu .menu-icon {
+            margin-right: 12px;
+            font-size: 18px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .menu-badge {
+            margin-left: auto;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 400;
+        }
+        
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+            padding: 32px;
+            min-height: 100vh;
+            width: calc(100% - 260px);
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+        .header-left h1 {
+            color: #1a202c;
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0 0 4px 0;
+        }
+        
+        .header-left p {
+            color: #718096;
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .action-btn {
+            padding: 10px 20px;
+            background: #00CED1;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .action-btn:hover {
+            background: #00B8B8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 206, 209, 0.3);
+        }
+
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .stat-card h3 {
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        .stat-card p {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a202c;
+        }
+        .control-panel {
+            background: white;
+            padding: 32px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .control-panel h2 {
+            margin: 0 0 24px 0;
+            color: #1a202c;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .filters {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #4a5568;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .filter-group select,
+        .filter-group input {
+            padding: 10px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #2d3748;
+            background: white;
+            transition: all 0.2s;
+        }
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .filter-group input {
+            min-width: 250px;
+        }
+        .btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        th, td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+        tr:hover {
+            background: #f7fafc;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-badge.active {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        .status-badge.inactive {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #a0aec0;
+        }
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 24px;
+            padding: 20px 0;
+        }
+        .pagination a,
+        .pagination span {
+            padding: 8px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #4a5568;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .pagination a:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .pagination .current {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .pagination .disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .time-badge {
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            color: #718096;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+                padding: 16px;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .filters {
+                flex-direction: column;
+            }
+            .filter-group input {
+                min-width: 100%;
+            }
+            .table-wrapper {
+                overflow-x: scroll;
+            }
+            table {
+                min-width: 600px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')" style="display: none; position: fixed; top: 20px; left: 20px; z-index: 1001; background: #667eea; color: white; border: none; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-size: 20px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">☰</button>
+    
+    <div class="sidebar">
+                <div class="sidebar-header">
+            <div class="logo">
+                <span class="logo-icon">🎲🎲</span>
+                <span>Gundu ata</span>
+            </div>
+            <div class="subtitle">Game control</div>
+        </div>
+        {% include 'admin/_sidebar_menu.html' %}
+    </div>
+    
+    <div class="main-content">
+        <div class="container">
+            <div class="header">
+                <div class="header-left">
+                    <h1>👥 Players Management</h1>
+                    <p>View and assign players to workers</p>
+                </div>
+                <div class="header-actions">
+                    <a href="{% url 'admin_logout' %}" class="logout-btn">🚪 Logout</a>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}" style="padding: 14px 20px; border-radius: 8px; margin: 16px 0; border: 1px solid;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Players</h3>
+                    <p>{{ total_users }}</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Active Players</h3>
+                    <p>{{ active_users }}</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Inactive Players</h3>
+                    <p>{{ inactive_users }}</p>
+                </div>
+            </div>
+            
+            <div class="control-panel">
+                <h2>👥 All Players</h2>
+                
+                <form method="get" action="{% url 'manage_players' %}" style="margin-bottom: 24px;">
+                    <div class="filters">
+                        <div class="filter-group">
+                            <label for="status">Status</label>
+                            <select name="status" id="status" onchange="this.form.submit()">
+                                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+                                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                                <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="search">Search</label>
+                            <input type="text" name="search" id="search" placeholder="Username, Email, Phone..." value="{{ search_query }}">
+                        </div>
+                        <div class="filter-group" style="justify-content: flex-end;">
+                            <label>&nbsp;</label>
+                            <button type="submit" class="btn">Search</button>
+                        </div>
+                    </div>
+                </form>
+                
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Phone</th>
+                                <th>Joined</th>
+                                <th>Assigned Worker</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for player in page_obj %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'user_details' player.id %}" style="color: #667eea; text-decoration: none; font-weight: 600;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                                        {{ player.username }}
+                                    </a>
+                                </td>
+                                <td>{{ player.phone_number|default:"—" }}</td>
+                                <td><span class="time-badge">{{ player.date_joined|date:"M d, Y" }}</span></td>
+                                <td>
+                                    <form action="{% url 'assign_worker' %}" method="post" class="assign-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="client_id" value="{{ player.id }}">
+                                        <select name="worker_id" onchange="this.form.submit()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; width: 100%; max-width: 180px;">
+                                            <option value="">Unassigned</option>
+                                            {% for worker in workers %}
+                                                <option value="{{ worker.id }}" {% if player.worker_id == worker.id %}selected{% endif %}>
+                                                    {{ worker.username }} {% if worker.is_superuser %}(Super){% endif %}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </form>
+                                </td>
+                                <td>
+                                    <span class="status-badge {% if player.is_active %}active{% else %}inactive{% endif %}">
+                                        {% if player.is_active %}✅ Active{% else %}❌ Inactive{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'user_details' player.id %}" style="color: #667eea; text-decoration: none; font-size: 12px;">View Details</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6">
+                                    <div class="empty-state">
+                                        <div class="empty-state-icon">👥</div>
+                                        <p>No players found</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if page_obj.has_other_pages %}
+                <div class="pagination">
+                    {% if page_obj.has_previous %}
+                        <a href="?status={{ status_filter }}&search={{ search_query }}&pg=1">« First</a>
+                        <a href="?status={{ status_filter }}&search={{ search_query }}&pg={{ page_obj.previous_page_number }}">‹ Prev</a>
+                    {% else %}
+                        <span class="disabled">« First</span>
+                        <span class="disabled">‹ Prev</span>
+                    {% endif %}
+                    
+                    <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                    
+                    {% if page_obj.has_next %}
+                        <a href="?status={{ status_filter }}&search={{ search_query }}&pg={{ page_obj.next_page_number }}">Next ›</a>
+                        <a href="?status={{ status_filter }}&search={{ search_query }}&pg={{ page_obj.paginator.num_pages }}">Last »</a>
+                    {% else %}
+                        <span class="disabled">Next ›</span>
+                        <span class="disabled">Last »</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sidebar scroll position preservation
+        const sidebarWrapper = document.querySelector('.sidebar-menu-wrapper');
+        if (sidebarWrapper) {
+            // Restore scroll position on page load
+            const savedScrollPos = localStorage.getItem('sidebarScrollPos');
+            if (savedScrollPos) {
+                sidebarWrapper.scrollTop = parseInt(savedScrollPos);
+            }
+
+            // Save scroll position before navigation
+            const sidebarLinks = sidebarWrapper.querySelectorAll('a');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    localStorage.setItem('sidebarScrollPos', sidebarWrapper.scrollTop);
+                });
+            });
+
+            // Also save on form submissions that navigate away
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function() {
+                    localStorage.setItem('sidebarScrollPos', sidebarWrapper.scrollTop);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

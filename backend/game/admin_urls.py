@@ -1,0 +1,36 @@
+from django.urls import path
+from . import admin_views
+
+urlpatterns = [
+    path('login/', admin_views.admin_login, name='admin_login'),
+    path('logout/', admin_views.admin_logout, name='admin_logout'),
+    path('dashboard/', admin_views.admin_dashboard, name='admin_dashboard'),
+    path('dice-control/', admin_views.dice_control, name='dice_control'),
+    path('recent-rounds/', admin_views.recent_rounds, name='recent_rounds'),
+    path('round/<str:round_id>/', admin_views.round_details, name='round_details'),
+    path('user/<int:user_id>/', admin_views.user_details, name='user_details'),
+    path('all-bets/', admin_views.all_bets, name='all_bets'),
+    path('wallets/', admin_views.wallets, name='wallets'),
+    path('deposit-requests/', admin_views.deposit_requests, name='deposit_requests'),
+    path('deposit-requests/<int:pk>/approve/', admin_views.approve_deposit, name='approve_deposit'),
+    path('deposit-requests/<int:pk>/reject/', admin_views.reject_deposit, name='reject_deposit'),
+    path('deposit-requests/check-new/', admin_views.check_new_deposit_requests, name='check_new_deposit_requests'),
+    path('withdraw-requests/', admin_views.withdraw_requests, name='withdraw_requests'),
+    path('withdraw-requests/check-new/', admin_views.check_new_withdraw_requests, name='check_new_withdraw_requests'),
+    path('withdraw-requests/<int:pk>/approve/', admin_views.approve_withdraw, name='approve_withdraw'),
+    path('withdraw-requests/<int:pk>/reject/', admin_views.reject_withdraw, name='reject_withdraw'),
+    path('reports/', admin_views.transactions, name='transactions'),
+    path('dashboard-data/', admin_views.admin_dashboard_data, name='admin_dashboard_data'),
+    path('set-dice/', admin_views.set_dice_result_view, name='set_dice_result_view'),
+    path('set-individual-dice/', admin_views.set_individual_dice_view, name='set_individual_dice_view'),
+    path('toggle-dice-mode/', admin_views.toggle_dice_mode, name='toggle_dice_mode'),
+    path('players-list/', admin_views.manage_players, name='manage_players'),
+    path('players/', admin_views.players, name='players'),
+    path('players/assign-worker/', admin_views.assign_worker, name='assign_worker'),
+    path('game-settings/', admin_views.game_settings, name='game_settings'),
+    path('admin-management/', admin_views.admin_management, name='admin_management'),
+    path('admin-management/create/', admin_views.create_admin, name='create_admin'),
+    path('admin-management/edit/<int:admin_id>/', admin_views.edit_admin, name='edit_admin'),
+    path('admin-management/delete/<int:admin_id>/', admin_views.delete_admin, name='delete_admin'),
+]
+

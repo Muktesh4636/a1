@@ -1,0 +1,13 @@
+# FastAPI configuration values
+APP_NAME="Game Control API"
+API_V1_STR="/api/v1"
+JWT_SECRET_KEY="change_me_super_secret"
+JWT_REFRESH_SECRET="change_me_refresh_secret"
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+REFRESH_TOKEN_EXPIRE_MINUTES=10080
+DATABASE_URL="sqlite:///./game_admin.db"
+CORS_ORIGINS='["http://localhost:9002","https://yourgame.com"]'
+UPLOAD_DIR="uploads"
+
+
+

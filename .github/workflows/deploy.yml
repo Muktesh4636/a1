@@ -1,0 +1,63 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  deploy:
+    name: Deploy to Production Server
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/dice_game
+            
+            # Backup database before deployment
+            echo "💾 Creating backup..."
+            BACKUP_DIR=/opt/dice_game/backups
+            mkdir -p $BACKUP_DIR
+            BACKUP_FILE="$BACKUP_DIR/backup_$(date +%Y%m%d_%H%M%S).sql"
+            if docker compose ps db | grep -q Up; then
+              docker compose exec -T db pg_dump -U postgres dice_game > "$BACKUP_FILE" 2>/dev/null || echo '⚠️  Backup failed, continuing...'
+              echo "📦 Backup saved to: $BACKUP_FILE"
+            fi
+            
+            # Pull latest code
+            echo "📦 Pulling latest code..."
+            git fetch origin
+            git reset --hard origin/main
+            
+            # Restart services
+            echo "🔄 Restarting services..."
+            docker compose down
+            docker compose up -d --build
+            
+            # Wait for services to start
+            echo "⏳ Waiting for services..."
+            sleep 15
+            
+            # Verify deployment
+            echo "🔍 Verifying deployment..."
+            HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8232/ || echo '000')
+            if [ "$HTTP_CODE" = '200' ]; then
+              echo '✅ Deployment successful! Server is responding.'
+            else
+              echo "⚠️  Server returned HTTP $HTTP_CODE"
+              exit 1
+            fi
+            
+            echo "✅ Deployment complete!"
+            echo "🌐 Server URL: http://${{ secrets.SERVER_HOST }}:8232/"
+

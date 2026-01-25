@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Management - Admin Panel</title>
+    {% load static %}
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            color: #2d3748;
+        }
+        .sidebar {
+            width: 260px;
+            background: #0f172a;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: hidden;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+            background: #0f172a;
+        }
+        
+        .sidebar-header .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .sidebar-header .logo-icon {
+            font-size: 24px;
+        }
+        
+        .sidebar-header .subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            font-weight: 400;
+            margin-top: 4px;
+        }
+
+        .sidebar-menu-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+            padding: 12px 0;
+        }
+
+        .sidebar-menu-wrapper::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-menu-wrapper::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar-menu-wrapper::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .sidebar-menu-wrapper::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        .menu-section {
+            margin-bottom: 24px;
+        }
+        
+        .menu-section-title {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 8px 20px;
+            margin-bottom: 4px;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .sidebar-menu li {
+            margin: 0;
+        }
+        
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+            position: relative;
+        }
+        
+        .sidebar-menu a:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .sidebar-menu a.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .sidebar-menu a.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #00CED1;
+        }
+        
+        .sidebar-menu .menu-icon {
+            margin-right: 12px;
+            font-size: 18px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .menu-badge {
+            margin-left: auto;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 400;
+        }
+        .sidebar-menu {
+            list-style: none;
+            padding: 12px 0;
+        }
+        .sidebar-menu li {
+            margin: 0;
+        }
+        
+        
+        
+        .sidebar-menu .menu-icon {
+            margin-right: 12px;
+            font-size: 18px;
+            width: 20px;
+            text-align: center;
+        }
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+            padding: 32px;
+            min-height: 100vh;
+            width: calc(100% - 260px);
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+        .header-left h1 {
+            color: #1a202c;
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0 0 4px 0;
+        }
+        
+        .header-left p {
+            color: #718096;
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .action-btn {
+            padding: 10px 20px;
+            background: #00CED1;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .action-btn:hover {
+            background: #00B8B8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 206, 209, 0.3);
+        }
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .logout-btn:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+        
+        
+        h1 {
+            color: #1a202c;
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0;
+        }
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .table {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table th,
+        .table td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .table th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .table tr:hover {
+            background: #f7fafc;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-super {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .badge-admin {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .alert {
+            padding: 14px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .permission-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .permission-tag {
+            padding: 4px 8px;
+            background: #e0e7ff;
+            color: #3730a3;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+                <div class="sidebar-header">
+            <div class="logo">
+                <span class="logo-icon">🎲🎲</span>
+                <span>Gundu ata</span>
+            </div>
+            <div class="subtitle">Game control</div>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="{% url 'admin_dashboard' %}">
+                <span class="menu-icon">📊</span> Dashboard
+            </a></li>
+            <li><a href="{% url 'dice_control' %}">
+                <span class="menu-icon">🎯</span> Dice Control
+            </a></li>
+            <li><a href="{% url 'recent_rounds' %}">
+                <span class="menu-icon">🔄</span> Recent Rounds
+            </a></li>
+            <li><a href="{% url 'all_bets' %}">
+                <span class="menu-icon">💰</span> All Bets
+            </a></li>
+            <li><a href="{% url 'wallets' %}">
+                <span class="menu-icon">💳</span> Wallets
+            </a></li>
+            <li><a href="{% url 'players' %}">
+                <span class="menu-icon">👥</span> Players
+            </a></li>
+            <li><a href="{% url 'deposit_requests' %}">
+                <span class="menu-icon">📥</span> Deposit Requests
+            </a></li>
+            <li><a href="{% url 'admin_transactions' %}">
+                <span class="menu-icon">📊</span> Reports
+            </a></li>
+            {% if is_super_admin %}
+            <li><a href="{% url 'game_settings' %}">
+                <span class="menu-icon">⏱️</span> Game Settings
+            </a></li>
+            <li><a href="{% url 'admin_management' %}" class="active">
+                <span class="menu-icon">👨‍💼</span> Admin Management
+            </a></li>
+            {% endif %}
+            <li style="border-top: 1px solid #e2e8f0; margin-top: 8px; padding-top: 8px;">
+                <a href="{% url 'admin_logout' %}" style="color: #dc3545;">
+                    <span class="menu-icon">🚪</span> Logout
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="container">
+            <div class="header">
+                <div class="header-left">
+                    <h1>👨‍💼 Admin Management</h1>
+                </div>
+                <div class="header-actions">
+                    <a href="{% url 'create_admin' %}" class="btn btn-primary">➕ Create New Admin</a>
+                    <a href="{% url 'admin_logout' %}" class="logout-btn">🚪 Logout</a>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Type</th>
+                            <th>Permissions</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for admin in admin_list %}
+                        <tr>
+                            <td><strong>{{ admin.user.username }}</strong></td>
+                            <td>{{ admin.user.email|default:"—" }}</td>
+                            <td>
+                                {% if admin.is_superuser %}
+                                    <span class="badge badge-super">👑 Super Admin</span>
+                                {% else %}
+                                    <span class="badge badge-admin">👤 Admin</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="permission-list">
+                                    {% if admin.permissions.can_view_dashboard %}<span class="permission-tag">Dashboard</span>{% endif %}
+                                    {% if admin.permissions.can_control_dice %}<span class="permission-tag">Dice Control</span>{% endif %}
+                                    {% if admin.permissions.can_view_recent_rounds %}<span class="permission-tag">Recent Rounds</span>{% endif %}
+                                    {% if admin.permissions.can_view_all_bets %}<span class="permission-tag">All Bets</span>{% endif %}
+                                    {% if admin.permissions.can_view_wallets %}<span class="permission-tag">Wallets</span>{% endif %}
+                                    {% if admin.permissions.can_view_players %}<span class="permission-tag">Players</span>{% endif %}
+                                    {% if admin.permissions.can_view_deposit_requests %}<span class="permission-tag">Deposit Requests</span>{% endif %}
+                                    {% if admin.permissions.can_view_withdraw_requests %}<span class="permission-tag">Withdraw Requests</span>{% endif %}
+                                    {% if admin.permissions.can_view_transactions %}<span class="permission-tag">Reports</span>{% endif %}
+                                    {% if admin.permissions.can_view_game_settings %}<span class="permission-tag">Game Settings</span>{% endif %}
+                                    {% if admin.permissions.can_view_admin_management %}<span class="permission-tag">Admin Management</span>{% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if admin.user.is_active %}
+                                    <span style="color: #10b981;">● Active</span>
+                                {% else %}
+                                    <span style="color: #ef4444;">● Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not admin.is_superuser %}
+                                    <a href="{% url 'edit_admin' admin.user.id %}" class="btn btn-secondary" style="padding: 6px 12px; margin-right: 8px;">✏️ Edit</a>
+                                {% else %}
+                                    <span style="color: #9ca3af; font-size: 12px;">Super Admin (cannot edit)</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 40px; color: #9ca3af;">
+                                No admin users found. <a href="{% url 'create_admin' %}">Create one now</a>.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sidebar scroll position preservation
+        const sidebarWrapper = document.querySelector('.sidebar-menu-wrapper');
+        if (sidebarWrapper) {
+            // Restore scroll position on page load
+            const savedScrollPos = localStorage.getItem('sidebarScrollPos');
+            if (savedScrollPos) {
+                sidebarWrapper.scrollTop = parseInt(savedScrollPos);
+            }
+
+            // Save scroll position before navigation
+            const sidebarLinks = sidebarWrapper.querySelectorAll('a');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    localStorage.setItem('sidebarScrollPos', sidebarWrapper.scrollTop);
+                });
+            });
+
+            // Also save on form submissions that navigate away
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function() {
+                    localStorage.setItem('sidebarScrollPos', sidebarWrapper.scrollTop);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

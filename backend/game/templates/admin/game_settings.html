@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Game Settings - Admin Panel</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            color: #2d3748;
+        }
+        .sidebar {
+            width: 260px;
+            background: #0f172a;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: hidden;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+            background: #0f172a;
+        }
+        
+        .sidebar-header .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .sidebar-header .logo-icon {
+            font-size: 24px;
+        }
+        
+        .sidebar-header .subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            font-weight: 400;
+            margin-top: 4px;
+        }
+
+        .sidebar-menu-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+            padding: 12px 0;
+        }
+
+        .sidebar-menu-wrapper::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-menu-wrapper::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar-menu-wrapper::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .sidebar-menu-wrapper::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        .menu-section {
+            margin-bottom: 24px;
+        }
+        
+        .menu-section-title {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 8px 20px;
+            margin-bottom: 4px;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .sidebar-menu li {
+            margin: 0;
+        }
+        
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+            position: relative;
+        }
+        
+        .sidebar-menu a:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .sidebar-menu a.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .sidebar-menu a.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #00CED1;
+        }
+        
+        .sidebar-menu .menu-icon {
+            margin-right: 12px;
+            font-size: 18px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .menu-badge {
+            margin-left: auto;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 400;
+        }
+        
+        
+        
+        
+        
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+            padding: 32px;
+            min-height: 100vh;
+            width: calc(100% - 260px);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+        .header-left h1 {
+            color: #1a202c;
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0 0 4px 0;
+        }
+        
+        .header-left p {
+            color: #718096;
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .action-btn {
+            padding: 10px 20px;
+            background: #00CED1;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .action-btn:hover {
+            background: #00B8B8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 206, 209, 0.3);
+        }
+
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+        
+        
+        h1 {
+            color: #1a202c;
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0;
+        }
+        .control-panel {
+            background: white;
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .control-panel h2 {
+            margin: 0 0 24px 0;
+            color: #1a202c;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .form-group {
+            margin-bottom: 24px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #4a5568;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .form-group .description {
+            font-size: 13px;
+            color: #718096;
+            margin-top: 6px;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        .alert {
+            padding: 14px 18px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+        .alert-success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        .alert-error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+        .info-box {
+            background: #edf2f7;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            border-left: 3px solid #667eea;
+        }
+        .info-box p {
+            margin: 4px 0;
+            color: #4a5568;
+            font-size: 14px;
+        }
+        .info-box strong {
+            color: #1a202c;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+                <div class="sidebar-header">
+            <div class="logo">
+                <span class="logo-icon">🎲🎲</span>
+                <span>Gundu ata</span>
+            </div>
+            <div class="subtitle">Game control</div>
+        </div>
+        {% include 'admin/_sidebar_menu.html' %}
+    </div>
+    
+    <div class="main-content">
+        <div class="container">
+            <div class="header">
+                <div class="header-left">
+                    <h1>⏱️ Game Time Settings</h1>
+                </div>
+                <div class="header-actions">
+                    <a href="{% url 'admin_dashboard' %}" class="action-btn">← Back to Dashboard</a>
+                    <a href="{% url 'admin_logout' %}" class="logout-btn">🚪 Logout</a>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="info-box">
+                <p><strong>⚠️ Important:</strong> Changes to these settings will only affect the next round. The current round will continue with its original timing settings.</p>
+                <p><strong>Timing Rules:</strong></p>
+                <p>• Betting Close Time must be less than Dice Result Time</p>
+                <p>• Dice Rolling Time must be less than Dice Result Time</p>
+                <p>• Dice Result Time must be less than Round End Time</p>
+                <p>• All values must be positive numbers (in seconds)</p>
+            </div>
+
+            <div class="control-panel">
+                <h2>Configure Game Timing</h2>
+                
+                <form method="post" action="{% url 'game_settings' %}">
+                    {% csrf_token %}
+                    
+                    {% for setting in settings_list %}
+                    <div class="form-group">
+                        <label for="{{ setting.key }}">
+                            {% if setting.key == 'BETTING_CLOSE_TIME' %}
+                                Betting Close Time (When betting closes)
+                            {% elif setting.key == 'DICE_ROLL_TIME' %}
+                                Dice Rolling Time (Seconds before dice result when warning is sent)
+                            {% elif setting.key == 'DICE_RESULT_TIME' %}
+                                Dice Result Time (When dice result is announced)
+                            {% elif setting.key == 'ROUND_END_TIME' %}
+                                Round End Time (Total round duration)
+                            {% else %}
+                                {{ setting.key }}
+                            {% endif %}
+                        </label>
+                        <input 
+                            type="number" 
+                            id="{{ setting.key }}" 
+                            name="{{ setting.key }}" 
+                            value="{{ setting.value }}"
+                            min="1"
+                            required
+                            step="1"
+                        >
+                        <div class="description">
+                            {{ setting.description }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <div style="margin-top: 32px; display: flex; gap: 12px;">
+                        <button type="submit" class="btn btn-primary">Save Settings</button>
+                        <a href="{% url 'admin_dashboard' %}" class="btn" style="background: #e2e8f0; color: #4a5568; text-decoration: none; display: inline-block;">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sidebar scroll position preservation
+        const sidebarWrapper = document.querySelector('.sidebar-menu-wrapper');
+        if (sidebarWrapper) {
+            // Restore scroll position on page load
+            const savedScrollPos = localStorage.getItem('sidebarScrollPos');
+            if (savedScrollPos) {
+                sidebarWrapper.scrollTop = parseInt(savedScrollPos);
+            }
+
+            // Save scroll position before navigation
+            const sidebarLinks = sidebarWrapper.querySelectorAll('a');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    localStorage.setItem('sidebarScrollPos', sidebarWrapper.scrollTop);
+                });
+            });
+
+            // Also save on form submissions that navigate away
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function() {
+                    localStorage.setItem('sidebarScrollPos', sidebarWrapper.scrollTop);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
+

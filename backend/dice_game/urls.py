@@ -1,0 +1,102 @@
+"""
+URL configuration for dice_game project.
+All URLs consolidated into a single file.
+"""
+from django.contrib import admin
+from django.urls import path, re_path
+from django.conf import settings
+from django.conf.urls.static import static
+from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
+from . import views as project_views
+
+# Import all views
+from accounts import views as accounts_views
+from game import views as game_views
+from game import admin_views as game_admin_views
+
+urlpatterns = [
+    # Admin (must come before catch-all)
+    path('admin/', admin.site.urls),
+    path('api/', project_views.api_root, name='api_root'),
+    
+    # Auth endpoints (api/auth/)
+    path('api/auth/register/', accounts_views.register, name='register'),
+    path('api/auth/login/', accounts_views.login, name='login'),
+    path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/auth/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path('api/auth/profile/', accounts_views.profile, name='profile'),
+    path('api/auth/wallet/', accounts_views.wallet, name='wallet'),
+    path('api/auth/transactions/', accounts_views.TransactionList.as_view(), name='transactions'),
+    path('api/auth/extract-utr/', accounts_views.extract_utr, name='extract_utr'),
+    path('api/auth/process-screenshot/', accounts_views.process_payment_screenshot, name='process_payment_screenshot'),
+    path('api/auth/deposits/initiate/', accounts_views.initiate_deposit, name='initiate_deposit'),
+    path('api/auth/deposits/upload-proof/', accounts_views.upload_deposit_proof, name='upload_deposit_proof'),
+    path('api/auth/deposits/mine/', accounts_views.my_deposit_requests, name='my_deposit_requests'),
+    path('api/auth/deposits/pending/', accounts_views.pending_deposit_requests, name='pending_deposit_requests'),
+    path('api/auth/deposits/<int:pk>/approve/', accounts_views.approve_deposit_request, name='approve_deposit_request'),
+    path('api/auth/deposits/<int:pk>/reject/', accounts_views.reject_deposit_request, name='reject_deposit_request'),
+    path('api/auth/withdraws/initiate/', accounts_views.initiate_withdraw, name='initiate_withdraw'),
+    path('api/auth/withdraws/mine/', accounts_views.my_withdraw_requests, name='my_withdraw_requests'),
+    path('api/auth/payment-methods/', accounts_views.get_payment_methods, name='get_payment_methods'),
+    path('api/auth/bank-details/', accounts_views.my_bank_details, name='my_bank_details'),
+    path('api/auth/bank-details/<int:pk>/', accounts_views.bank_detail_action, name='bank_detail_action'),
+    
+    # Game endpoints (api/game/)
+    path('api/game/round/', game_views.current_round, name='current_round'),
+    path('api/game/bet/', game_views.place_bet, name='place_bet'),
+    path('api/game/bet/<int:number>/', game_views.remove_bet, name='remove_bet'),
+    path('api/game/bets/', game_views.my_bets, name='my_bets'),
+    path('api/game/results/', game_views.round_results, name='round_results'),
+    path('api/game/results/<str:round_id>/', game_views.round_results, name='round_results_by_id'),
+    re_path(r'^api/game/winning-results/?\s*$', game_views.winning_results, name='winning_results'),
+    re_path(r'^api/game/winning-results/(?P<round_id>[A-Za-z0-9_-]+)/?\s*$', game_views.winning_results, name='winning_results_by_id'),
+    path('api/game/last-round-results/', game_views.last_round_results, name='last_round_results'),
+    path('api/game/set-dice/', game_views.set_dice_result, name='set_dice_result'),
+    path('api/game/dice-mode/', game_views.dice_mode, name='dice_mode'),
+    path('api/game/stats/', game_views.game_stats, name='game_stats'),
+    path('api/game/settings/', game_views.game_settings_api, name='game_settings_api'),
+    
+    # Game admin endpoints (game-admin/)
+    path('game-admin/login/', game_admin_views.admin_login, name='admin_login'),
+    path('game-admin/logout/', game_admin_views.admin_logout, name='admin_logout'),
+    path('game-admin/dashboard/', game_admin_views.admin_dashboard, name='admin_dashboard'),
+    path('game-admin/dice-control/', game_admin_views.dice_control, name='dice_control'),
+    path('game-admin/recent-rounds/', game_admin_views.recent_rounds, name='recent_rounds'),
+    path('game-admin/round/<str:round_id>/', game_admin_views.round_details, name='round_details'),
+    path('game-admin/user/<int:user_id>/', game_admin_views.user_details, name='user_details'),
+    path('game-admin/all-bets/', game_admin_views.all_bets, name='all_bets'),
+    path('game-admin/wallets/', game_admin_views.wallets, name='wallets'),
+    path('game-admin/deposit-requests/', game_admin_views.deposit_requests, name='deposit_requests'),
+    path('game-admin/deposit-requests/check-new/', game_admin_views.check_new_deposit_requests, name='check_new_deposit_requests'),
+    path('game-admin/deposit-requests/<int:pk>/approve/', game_admin_views.approve_deposit, name='approve_deposit'),
+    path('game-admin/deposit-requests/<int:pk>/reject/', game_admin_views.reject_deposit, name='reject_deposit'),
+    path('game-admin/withdraw-requests/', game_admin_views.withdraw_requests, name='withdraw_requests'),
+    path('game-admin/withdraw-requests/check-new/', game_admin_views.check_new_withdraw_requests, name='check_new_withdraw_requests'),
+    path('game-admin/withdraw-requests/<int:pk>/approve/', game_admin_views.approve_withdraw, name='approve_withdraw'),
+    path('game-admin/withdraw-requests/<int:pk>/reject/', game_admin_views.reject_withdraw, name='reject_withdraw'),
+    path('game-admin/reports/', game_admin_views.transactions, name='admin_transactions'),
+    path('game-admin/dashboard-data/', game_admin_views.admin_dashboard_data, name='admin_dashboard_data'),
+    path('game-admin/set-dice/', game_admin_views.set_dice_result_view, name='set_dice_result_view'),
+    path('game-admin/set-individual-dice/', game_admin_views.set_individual_dice_view, name='set_individual_dice_view'),
+    path('game-admin/toggle-dice-mode/', game_admin_views.toggle_dice_mode, name='toggle_dice_mode'),
+    path('game-admin/players-list/', game_admin_views.manage_players, name='manage_players'),
+    path('game-admin/players/', game_admin_views.players, name='players'),
+    path('game-admin/players/assign-worker/', game_admin_views.assign_worker, name='assign_worker'),
+    path('game-admin/game-settings/', game_admin_views.game_settings, name='game_settings'),
+    path('game-admin/admin-management/', game_admin_views.admin_management, name='admin_management'),
+    path('game-admin/admin-management/create/', game_admin_views.create_admin, name='create_admin'),
+    path('game-admin/admin-management/edit/<int:admin_id>/', game_admin_views.edit_admin, name='edit_admin'),
+    path('game-admin/admin-management/delete/<int:admin_id>/', game_admin_views.delete_admin, name='delete_admin'),
+    
+    # Serve React static assets (assets/*)
+    re_path(r'^assets/.*$', project_views.serve_react_app, name='react_assets'),
+    
+    # Catch-all route for React app (must be last)
+    # This will serve the React app for all routes not matched above
+    re_path(r'^(?!api/|admin/|game-admin/|static/|media/|ws/).*$', project_views.serve_react_app, name='react_app'),
+]
+
+# Serve static files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
