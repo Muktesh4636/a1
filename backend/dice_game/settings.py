@@ -19,7 +19,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-this-in-production'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*']  # Configure properly for production
+ALLOWED_HOSTS = ['*', 'gunduata.online', 'www.gunduata.online']  # Configure properly for production
 
 
 # Application definition
@@ -180,6 +180,33 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# CSRF Settings
+CSRF_TRUSTED_ORIGINS = [
+    "http://gunduata.online",
+    "https://gunduata.online",
+    "http://www.gunduata.online",
+    "https://www.gunduata.online",
+    "http://159.198.46.36",
+    "http://localhost:8009",
+    "http://127.0.0.1:8009",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://localhost:9001",
+    "http://localhost:9002",
+    "http://localhost:9004",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:9001",
+    "http://127.0.0.1:9002",
+    "http://127.0.0.1:9004",
+]
+
+# CSRF Cookie Settings
+CSRF_COOKIE_SECURE = False  # Set to True in production with HTTPS
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_USE_SESSIONS = False
 
 # Redis Configuration
 REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')

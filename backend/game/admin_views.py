@@ -158,7 +158,6 @@ def admin_dashboard(request):
                 # Check if Redis data is stale (older than ROUND_END_TIME + 10s)
                 is_stale = False
                 if 'start_time' in round_data:
-                    from django.utils import timezone
                     from datetime import datetime
                     try:
                         start_time = datetime.fromisoformat(round_data['start_time'])
@@ -357,7 +356,7 @@ def admin_dashboard_data(request):
     current_round = None
     timer = 0
     status = 'WAITING'
-    
+
     if redis_client:
         try:
             round_data = redis_client.get('current_round')
@@ -367,7 +366,6 @@ def admin_dashboard_data(request):
                 # Check if Redis data is stale (older than ROUND_END_TIME + 10s)
                 is_stale = False
                 if 'start_time' in round_data:
-                    from django.utils import timezone
                     from datetime import datetime
                     try:
                         start_time = datetime.fromisoformat(round_data['start_time'])
@@ -654,7 +652,6 @@ def dice_control(request):
                 # Check if Redis data is stale (older than ROUND_END_TIME + 10s)
                 is_stale = False
                 if 'start_time' in round_data:
-                    from django.utils import timezone
                     from datetime import datetime
                     try:
                         start_time = datetime.fromisoformat(round_data['start_time'])

@@ -323,24 +323,22 @@ class Command(BaseCommand):
                             pipe.execute()  # Execute both writes in one round trip
                         self.stdout.write(self.style.SUCCESS(f'New round started: {round_obj.round_id}'))
                     else:
-                        # Calculate timer from elapsed time (1-round_end_time, not 0-(round_end_time-1))
-                        timer_raw = int(elapsed) % round_end_time
-                        timer = round_end_time if timer_raw == 0 else timer_raw  # Convert 0 to round_end_time, keep 1-(round_end_time-1) as is
+                        # Calculate timer from elapsed time (1 to round_end_time)
+                        timer = int(elapsed) + 1
                         
-                        # Determine status based on timer value (calculate together with timer)
-                        # This ensures timer and status are always in sync
+                        # Determine status based on timer value
                         if timer <= betting_close_time:
-                            # 1-30 seconds: BETTING
+                            # e.g., 1-30 seconds: BETTING
                             status = 'BETTING'
                         elif timer < dice_result_time:
-                            # 31-50 seconds: CLOSED
+                            # e.g., 31-50 seconds: CLOSED
                             status = 'CLOSED'
                         elif timer <= round_end_time:
-                            # 51-70 seconds: RESULT (dice roll happens at 51)
+                            # e.g., 51-80 seconds: RESULT
                             status = 'RESULT'
                         else:
-                            # Should not happen, but fallback
-                            status = 'BETTING'
+                            # Fallback
+                            status = 'RESULT'
                         
                         # Update database status if it doesn't match
                         if round_obj.status != status:

@@ -173,9 +173,8 @@ class GameConsumer(AsyncWebsocketConsumer):
                             timer = 1  # Start new round at 1
                             status = 'WAITING'
                         else:
-                            # Calculate timer (1-round_end_time, not 0-(round_end_time-1))
-                            timer_raw = int(elapsed) % round_end_time
-                            timer = round_end_time if timer_raw == 0 else timer_raw
+                            # Calculate timer (1 to round_end_time)
+                            timer = int(elapsed) + 1
                             status = round_obj.status
                         # Try to sync to Redis if available
                         if redis_client:
