@@ -68,8 +68,6 @@ class DepositRequestSerializer(serializers.ModelSerializer):
             'amount',
             'status',
             'screenshot_url',
-            'payment_reference',
-            'payment_link',
             'admin_note',
             'created_at',
             'updated_at',

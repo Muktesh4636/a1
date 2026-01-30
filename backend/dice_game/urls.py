@@ -88,6 +88,13 @@ urlpatterns = [
     path('game-admin/admin-management/edit/<int:admin_id>/', game_admin_views.edit_admin, name='edit_admin'),
     path('game-admin/admin-management/delete/<int:admin_id>/', game_admin_views.delete_admin, name='delete_admin'),
     
+    # Payment Methods
+    path('game-admin/payment-methods/', game_admin_views.payment_methods, name='payment_methods'),
+    path('game-admin/payment-methods/create/', game_admin_views.create_payment_method, name='create_payment_method'),
+    path('game-admin/payment-methods/<int:pk>/edit/', game_admin_views.edit_payment_method, name='edit_payment_method'),
+    path('game-admin/payment-methods/<int:pk>/delete/', game_admin_views.delete_payment_method, name='delete_payment_method'),
+    path('game-admin/payment-methods/<int:pk>/toggle/', game_admin_views.toggle_payment_method, name='toggle_payment_method'),
+    
     # Serve React static assets (assets/*)
     re_path(r'^assets/.*$', project_views.serve_react_app, name='react_assets'),
     

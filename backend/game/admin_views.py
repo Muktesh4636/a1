@@ -9,7 +9,7 @@ from django.db import transaction as db_transaction
 import redis
 import json
 from .models import GameRound, Bet, DiceResult, GameSettings, AdminPermissions
-from accounts.models import Wallet, Transaction, DepositRequest, WithdrawRequest, User
+from accounts.models import Wallet, Transaction, DepositRequest, WithdrawRequest, User, PaymentMethod
 from accounts.player_distribution import (
     redistribute_all_players,
     balance_player_distribution,
@@ -67,6 +67,7 @@ def get_admin_context(request, extra_context=None):
             can_view_transactions = True
             can_view_game_settings = True
             can_view_admin_management = True
+            can_manage_payment_methods = True
         admin_permissions = DummyPermissions()
     
     context = {
@@ -2057,3 +2058,123 @@ def game_settings(request):
     })
     
     return render(request, 'admin/game_settings.html', context)
+
+@admin_required
+def payment_methods(request):
+    """List all payment methods"""
+    if not has_menu_permission(request.user, 'payment_methods'):
+        messages.error(request, 'You do not have permission to manage payment methods.')
+        return redirect('admin_dashboard')
+    
+    methods = PaymentMethod.objects.all().order_by('-is_active', 'method_type')
+    
+    context = get_admin_context(request, {
+        'payment_methods': methods,
+        'page': 'payment-methods',
+    })
+    return render(request, 'admin/payment_methods.html', context)
+
+@admin_required
+def create_payment_method(request):
+    """Create a new payment method"""
+    if not has_menu_permission(request.user, 'payment_methods'):
+        messages.error(request, 'You do not have permission to manage payment methods.')
+        return redirect('admin_dashboard')
+    
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        method_type = request.POST.get('method_type')
+        upi_id = request.POST.get('upi_id', '')
+        link = request.POST.get('link', '')
+        account_name = request.POST.get('account_name', '')
+        bank_name = request.POST.get('bank_name', '')
+        account_number = request.POST.get('account_number', '')
+        ifsc_code = request.POST.get('ifsc_code', '')
+        is_active = request.POST.get('is_active') == 'on'
+        
+        if not name or not method_type:
+            messages.error(request, 'Name and Method Type are required.')
+            return redirect('payment_methods')
+        
+        try:
+            PaymentMethod.objects.create(
+                name=name,
+                method_type=method_type,
+                upi_id=upi_id,
+                link=link,
+                account_name=account_name,
+                bank_name=bank_name,
+                account_number=account_number,
+                ifsc_code=ifsc_code,
+                is_active=is_active
+            )
+            messages.success(request, f'Payment method "{name}" created successfully!')
+        except Exception as e:
+            messages.error(request, f'Error creating payment method: {str(e)}')
+            
+    return redirect('payment_methods')
+
+@admin_required
+def edit_payment_method(request, pk):
+    """Edit a payment method"""
+    if not has_menu_permission(request.user, 'payment_methods'):
+        messages.error(request, 'You do not have permission to manage payment methods.')
+        return redirect('admin_dashboard')
+    
+    method = get_object_or_404(PaymentMethod, pk=pk)
+    
+    if request.method == 'POST':
+        method.name = request.POST.get('name')
+        method.method_type = request.POST.get('method_type')
+        method.upi_id = request.POST.get('upi_id', '')
+        method.link = request.POST.get('link', '')
+        method.account_name = request.POST.get('account_name', '')
+        method.bank_name = request.POST.get('bank_name', '')
+        method.account_number = request.POST.get('account_number', '')
+        method.ifsc_code = request.POST.get('ifsc_code', '')
+        
+        method.is_active = request.POST.get('is_active') == 'on'
+        
+        if not method.name or not method.method_type:
+            messages.error(request, 'Name and Method Type are required.')
+        else:
+            try:
+                method.save()
+                messages.success(request, f'Payment method "{method.name}" updated successfully!')
+            except Exception as e:
+                messages.error(request, f'Error updating payment method: {str(e)}')
+                
+    return redirect('payment_methods')
+
+@admin_required
+def delete_payment_method(request, pk):
+    """Delete a payment method"""
+    if not has_menu_permission(request.user, 'payment_methods'):
+        messages.error(request, 'You do not have permission to manage payment methods.')
+        return redirect('admin_dashboard')
+    
+    if request.method == 'POST':
+        method = get_object_or_404(PaymentMethod, pk=pk)
+        name = method.name
+        try:
+            method.delete()
+            messages.success(request, f'Payment method "{name}" deleted successfully!')
+        except Exception as e:
+            messages.error(request, f'Error deleting payment method: {str(e)}')
+            
+    return redirect('payment_methods')
+
+@admin_required
+def toggle_payment_method(request, pk):
+    """Toggle active status of a payment method"""
+    if not has_menu_permission(request.user, 'payment_methods'):
+        messages.error(request, 'You do not have permission to manage payment methods.')
+        return redirect('admin_dashboard')
+    
+    method = get_object_or_404(PaymentMethod, pk=pk)
+    method.is_active = not method.is_active
+    method.save()
+    
+    status = "activated" if method.is_active else "deactivated"
+    messages.success(request, f'Payment method "{method.name}" {status} successfully!')
+    return redirect('payment_methods')

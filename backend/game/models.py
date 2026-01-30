@@ -98,6 +98,7 @@ class AdminPermissions(models.Model):
     can_view_transactions = models.BooleanField(default=True)
     can_view_game_settings = models.BooleanField(default=False)  # Super Admin only by default
     can_view_admin_management = models.BooleanField(default=False)  # Super Admin only by default
+    can_manage_payment_methods = models.BooleanField(default=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

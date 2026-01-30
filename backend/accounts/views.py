@@ -360,8 +360,6 @@ def process_payment_screenshot(request):
 def upload_deposit_proof(request):
     """Create a deposit request with PENDING status - requires admin approval"""
     amount_raw = request.data.get('amount')
-    payment_link = request.data.get('payment_link', '')
-    payment_reference = request.data.get('payment_reference', '')
     
     # Try multiple possible field names for the file
     screenshot = request.FILES.get('screenshot') or request.FILES.get('file') or request.FILES.get('image')
@@ -386,10 +384,7 @@ def upload_deposit_proof(request):
             user=request.user,
             amount=amount,
             screenshot=screenshot,
-            payment_link=payment_link,
-            payment_reference=payment_reference,
-            status='PENDING',  # Changed from 'APPROVED' to 'PENDING'
-            # No processed_at, processed_by, or wallet credit here
+            status='PENDING',
         )
     except Exception as e:
         # Catch any database or validation errors and return JSON response

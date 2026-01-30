@@ -575,7 +575,6 @@
                                 <th>Amount</th>
                                 <th>Status</th>
                                 <th>Screenshot</th>
-                                <th>Payment Ref</th>
                                 <th>Processed By</th>
                                 <th>Created</th>
                                 <th>Actions</th>
@@ -601,13 +600,6 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if request.payment_reference %}
-                                        <span class="time-badge">{{ request.payment_reference }}</span>
-                                    {% else %}
-                                        <span style="color: #a0aec0;">-</span>
-                                    {% endif %}
-                                </td>
-                                <td>
                                     {% if request.processed_by %}
                                         {{ request.processed_by.username }}
                                     {% else %}
@@ -618,7 +610,7 @@
                                 <td>
                                     {% if request.status == 'PENDING' %}
                                         <div style="display: flex; gap: 8px;">
-                                            <button type="button" onclick="showApproveModal({{ request.pk }}, '{{ request.user.username|escapejs }}', {{ request.amount }}, '{{ request.payment_reference|escapejs }}')" style="padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#218838'" onmouseout="this.style.background='#28a745'">
+                                            <button type="button" onclick="showApproveModal({{ request.pk }}, '{{ request.user.username|escapejs }}', {{ request.amount }})" style="padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#218838'" onmouseout="this.style.background='#28a745'">
                                                 ✅ Approve
                                             </button>
                                             <button type="button" onclick="showRejectModal({{ request.pk }}, '{{ request.user.username|escapejs }}', {{ request.amount }})" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#c82333'" onmouseout="this.style.background='#dc3545'">
@@ -632,7 +624,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="8">
+                                <td colspan="7">
                                     <div class="empty-state">
                                         <div class="empty-state-icon">📥</div>
                                         <p>No deposit requests found</p>
@@ -747,10 +739,6 @@
             const screenshotHtml = data.screenshot_url 
                 ? `<a href="${data.screenshot_url}" target="_blank" class="screenshot-link">View</a>`
                 : `<span style="color: #a0aec0;">-</span>`;
-                
-            const paymentRefHtml = data.payment_reference
-                ? `<span class="time-badge">${data.payment_reference}</span>`
-                : `<span style="color: #a0aec0;">-</span>`;
 
             // Note: In real-time row, "Processed By" is always "-" initially
             row.innerHTML = `
@@ -764,14 +752,13 @@
                     <span class="status pending">PENDING</span>
                 </td>
                 <td>${screenshotHtml}</td>
-                <td>${paymentRefHtml}</td>
                 <td>
                     <span style="color: #a0aec0;">-</span>
                 </td>
                 <td><span class="time-badge">${data.created_at}</span></td>
                 <td>
                     <div style="display: flex; gap: 8px;">
-                        <button type="button" onclick="showApproveModal(${data.id}, '${data.user}', ${data.amount}, '${data.payment_reference || ''}')" style="padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#218838'" onmouseout="this.style.background='#28a745'">
+                        <button type="button" onclick="showApproveModal(${data.id}, '${data.user}', ${data.amount})" style="padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#218838'" onmouseout="this.style.background='#28a745'">
                             ✅ Approve
                         </button>
                         <button type="button" onclick="showRejectModal(${data.id}, '${data.user}', ${data.amount})" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#c82333'" onmouseout="this.style.background='#dc3545'">
@@ -833,10 +820,10 @@
             document.getElementById('rejectForm').reset();
         }
 
-        function showApproveModal(requestId, username, amount, utr) {
+        function showApproveModal(requestId, username, amount) {
             document.getElementById('approve-modal-username').textContent = username;
             document.getElementById('approve-modal-amount').textContent = parseFloat(amount).toFixed(2);
-            document.getElementById('approve-modal-utr').value = utr || '';
+            document.getElementById('approve-modal-utr').value = '';
             document.getElementById('approveForm').action = '/game-admin/deposit-requests/' + requestId + '/approve/';
             document.getElementById('approveModal').style.display = 'block';
         }

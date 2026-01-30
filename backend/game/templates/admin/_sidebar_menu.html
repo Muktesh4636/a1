@@ -87,6 +87,12 @@
                 <span class="menu-icon">⚙️</span> Game Settings
             </a></li>
             {% endif %}
+
+            {% if is_super_admin or admin_permissions.can_manage_payment_methods %}
+            <li><a href="{% url 'payment_methods' %}" {% if page == 'payment-methods' %}class="active"{% endif %}>
+                <span class="menu-icon">🏦</span> Payment Methods
+            </a></li>
+            {% endif %}
             
         </ul>
     </div>

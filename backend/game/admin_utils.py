@@ -108,6 +108,7 @@ def has_menu_permission(user, permission_name):
         'transactions': 'can_view_transactions',
         'game_settings': 'can_view_game_settings',
         'admin_management': 'can_view_admin_management',
+        'payment_methods': 'can_manage_payment_methods',
     }
     
     field_name = permission_map.get(permission_name)
