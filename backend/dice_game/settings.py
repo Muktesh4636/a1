@@ -53,6 +53,7 @@ TESSERACT_CMD = os.getenv('TESSERACT_CMD', '/opt/homebrew/bin/tesseract')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'dice_game.middleware.HideServerInfoMiddleware',  # SECURITY: Hide server info
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -95,6 +96,15 @@ if not DEBUG:
     
     # Password reset timeout (in seconds)
     PASSWORD_RESET_TIMEOUT = 3600  # 1 hour
+    
+    # SECURITY: Hide server information
+    SECURE_HIDE_SERVER_INFO = True
+    
+    # Disable Django admin branding (prevents version disclosure)
+    ADMIN_URL = 'admin/'  # Change from default to make it less obvious
+    
+    # Prevent information disclosure in error pages
+    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 
 ROOT_URLCONF = 'dice_game.urls'
 

@@ -4,7 +4,8 @@ FROM python:3.12-slim
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    AUTOBAHN_USE_NVX=0
+    AUTOBAHN_USE_NVX=0 \
+    DJANGO_SETTINGS_MODULE=dice_game.settings
 
 # Set work directory
 WORKDIR /app
