@@ -82,11 +82,29 @@ def get_admin_context(request, extra_context=None):
     return context
 
 def admin_login(request):
-    """Custom login page for game admin panel"""
+    """Custom login page for game admin panel - SECURITY: Rate limited"""
     if request.user.is_authenticated and is_admin(request.user):
         # Already logged in and is admin, redirect to dashboard
         next_url = request.GET.get('next', '/game-admin/dashboard/')
         return redirect(next_url)
+    
+    # SECURITY: Rate limiting to prevent brute force attacks
+    from django.core.cache import cache
+    from django.conf import settings
+    
+    # Get client IP address
+    client_ip = request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip() or request.META.get('REMOTE_ADDR', '')
+    cache_key = f'login_attempts_{client_ip}'
+    
+    # Check rate limit: max 5 attempts per 15 minutes
+    login_attempts = cache.get(cache_key, 0)
+    if login_attempts >= 5:
+        error_message = 'Too many login attempts. Please try again in 15 minutes.'
+        context = {
+            'next': request.GET.get('next', '/game-admin/dashboard/'),
+            'error_message': error_message,
+        }
+        return render(request, 'admin/login.html', context)
     
     error_message = None
     if request.method == 'POST':
@@ -99,13 +117,19 @@ def admin_login(request):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 if is_admin(user):
+                    # Successful login - reset attempt counter
+                    cache.delete(cache_key)
                     login(request, user)
                     messages.success(request, f'Welcome, {user.username}!')
                     return redirect(next_url)
                 else:
                     error_message = 'You do not have permission to access the admin panel.'
+                    # Increment failed attempt counter
+                    cache.set(cache_key, login_attempts + 1, 900)  # 15 minutes
             else:
                 error_message = 'Invalid username or password.'
+                # Increment failed attempt counter
+                cache.set(cache_key, login_attempts + 1, 900)  # 15 minutes
         else:
             error_message = 'Please provide both username and password.'
     

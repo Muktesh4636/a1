@@ -17,9 +17,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-this-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+DEBUG = os.getenv('DEBUG', 'False') == 'True'  # Default to False for production
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+# Security: Only allow specific hosts
+ALLOWED_HOSTS_STR = os.getenv('ALLOWED_HOSTS', 'gunduata.online,www.gunduata.online,72.61.254.71')
+ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_STR.split(',') if host.strip()]
 
 
 # Application definition
@@ -59,6 +61,40 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# SECURITY: Production security settings
+if not DEBUG:
+    # HTTPS/SSL Settings
+    SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'False') == 'True'
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    
+    # HSTS (HTTP Strict Transport Security)
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # Additional security headers
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    
+    # CSRF trusted origins for production
+    CSRF_TRUSTED_ORIGINS = [
+        'https://gunduata.online',
+        'https://www.gunduata.online',
+        'http://72.61.254.71',  # Remove this when HTTPS is enabled
+    ]
+    
+    # Session security
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    
+    # Password reset timeout (in seconds)
+    PASSWORD_RESET_TIMEOUT = 3600  # 1 hour
 
 ROOT_URLCONF = 'dice_game.urls'
 
@@ -115,9 +151,24 @@ else:
     }
 
 
-# Password validation
-# Reduced restrictions as requested: Minimum 4 characters, no complexity requirements.
-AUTH_PASSWORD_VALIDATORS = []
+# Password validation - SECURITY: Strong password requirements
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 8,  # Minimum 8 characters
+        }
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
 
 
 # Internationalization
@@ -145,7 +196,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
 
-# REST Framework
+# REST Framework - SECURITY: Rate limiting and throttling
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -155,31 +206,47 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    # Rate limiting to prevent abuse
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/hour',  # Anonymous users: 100 requests per hour
+        'user': '1000/hour',  # Authenticated users: 1000 requests per hour
+        'login': '5/minute',  # Login attempts: 5 per minute
+        'bet': '60/minute',  # Betting: 60 bets per minute
+    }
 }
 
-# JWT Settings
+# JWT Settings - SECURITY: Shorter token lifetimes
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=24),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),  # Reduced from 24h to 1h
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
 }
 
-# CORS Settings
+# CORS Settings - SECURITY: Restrict to specific origins
+CORS_ALLOWED_ORIGINS_STR = os.getenv(
+    'CORS_ALLOWED_ORIGINS',
+    'https://gunduata.online,https://www.gunduata.online,http://localhost:5173,http://localhost:3000'
+)
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://localhost:9001",
-    "http://localhost:9002",
-    "http://localhost:9004",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:9001",
-    "http://127.0.0.1:9002",
-    "http://127.0.0.1:9004",
+    origin.strip() for origin in CORS_ALLOWED_ORIGINS_STR.split(',') if origin.strip()
 ]
 
+# Only allow credentials from trusted origins
 CORS_ALLOW_CREDENTIALS = True
+
+# CORS Security: Block all other origins
+CORS_ALLOW_ALL_ORIGINS = False
 
 # Redis Configuration
 REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
