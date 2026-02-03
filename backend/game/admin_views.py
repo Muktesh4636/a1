@@ -152,14 +152,20 @@ def admin_login(request):
                     # Track failed logins for firewall middleware
                     failed_count = cache.get(failed_logins_key, 0) + 1
                     cache.set(failed_logins_key, failed_count, 900)  # 15 minutes
-            else:
-                error_message = 'Invalid username or password.'
-                # Increment failed attempt counter
-                login_attempts = cache.get(cache_key, 0) + 1
-                cache.set(cache_key, login_attempts, 900)  # 15 minutes
-                # Track failed logins for firewall middleware
-                failed_count = cache.get(failed_logins_key, 0) + 1
-                cache.set(failed_logins_key, failed_count, 900)  # 15 minutes
+                else:
+                    error_message = 'Invalid username or password.'
+                    # Increment failed attempt counter
+                    login_attempts = cache.get(cache_key, 0) + 1
+                    cache.set(cache_key, login_attempts, 900)  # 15 minutes
+                    # Track failed logins for firewall middleware
+                    failed_count = cache.get(failed_logins_key, 0) + 1
+                    cache.set(failed_logins_key, failed_count, 900)  # 15 minutes
+                    
+                    # SECURITY: If too many failed attempts, permanently block IP
+                    if failed_count >= 50:
+                        from dice_game.attack_detection import AttackDetector
+                        AttackDetector.block_ip_permanently(client_ip)
+                        error_message = 'Too many failed login attempts. Your IP has been permanently blocked.'
         else:
             error_message = 'Please provide both username and password.'
     

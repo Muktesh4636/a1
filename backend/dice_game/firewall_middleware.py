@@ -11,6 +11,9 @@ from django.utils.deprecation import MiddlewareMixin
 from django.conf import settings
 import time
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class MultiLayerFirewallMiddleware(MiddlewareMixin):
@@ -118,36 +121,21 @@ class MultiLayerFirewallMiddleware(MiddlewareMixin):
         return True
     
     def detect_suspicious_activity(self, ip, request):
-        """Detect suspicious patterns"""
-        suspicious_patterns = [
-            '/admin/',  # Django admin (should use /game-admin/)
-            '/wp-admin/',  # WordPress (not used)
-            '/phpmyadmin/',  # phpMyAdmin (not used)
-            '/.env',  # Environment file access
-            '/config.php',  # Config file access
-            '/wp-config.php',  # WordPress config
-            'SELECT',  # SQL injection attempt
-            'UNION',  # SQL injection attempt
-            '<script>',  # XSS attempt
-            '../',  # Path traversal
-        ]
+        """Detect suspicious patterns and permanently block attackers"""
+        from .attack_detection import AttackDetector
         
-        request_path = request.path.lower()
-        request_body = ''
+        # Use advanced attack detection
+        attack_detected, attack_type = AttackDetector.detect_attack(request)
         
-        if request.method == 'POST':
-            try:
-                request_body = str(request.body).lower()
-            except:
-                pass
-        
-        for pattern in suspicious_patterns:
-            if pattern.lower() in request_path or pattern.lower() in request_body:
-                # Log suspicious activity
-                cache.set(f'suspicious_{ip}', True, 3600)
-                # Block IP temporarily
-                cache.set(f'blocked_ip_{ip}', True, 1800)  # Block for 30 minutes
-                return False
+        if attack_detected:
+            # PERMANENTLY block attacking IP
+            AttackDetector.block_ip_permanently(ip)
+            
+            # Also block in cache for immediate effect
+            cache.set(f'blocked_ip_{ip}', True, 31536000)  # 1 year
+            cache.set(f'attack_{ip}', attack_type, 31536000)
+            
+            return False
         
         return True
     
@@ -157,6 +145,8 @@ class MultiLayerFirewallMiddleware(MiddlewareMixin):
         
         # Layer 1: Check blacklist
         if self.check_ip_blacklist(ip):
+            # Log blocked access attempt
+            logger.warning(f"Blocked IP {ip} attempted access")
             return HttpResponseForbidden(
                 '<h1>403 Forbidden</h1><p>Your IP address has been blocked.</p>',
                 content_type='text/html'
@@ -183,10 +173,12 @@ class MultiLayerFirewallMiddleware(MiddlewareMixin):
                 content_type='text/html'
             )
         
-        # Layer 5: Suspicious activity detection
+        # Layer 5: Suspicious activity detection (permanently blocks attackers)
         if not self.detect_suspicious_activity(ip, request):
+            # IP has been permanently blocked by attack detection
+            logger.error(f"HACKING ATTEMPT BLOCKED: IP {ip} - Permanently blocked")
             return HttpResponseForbidden(
-                '<h1>403 Forbidden</h1><p>Suspicious activity detected. Access denied.</p>',
+                '<h1>403 Forbidden</h1><p>Attack detected. Your IP has been permanently blocked.</p>',
                 content_type='text/html'
             )
         
