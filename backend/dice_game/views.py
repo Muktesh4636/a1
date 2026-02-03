@@ -172,16 +172,18 @@ def serve_react_app(request, path=''):
 
 
 def custom_404_handler(request, exception):
-    """Custom 404 handler that returns JSON for API requests"""
+    """Custom 404 handler - No information disclosure"""
+    # Generic response with no identifying information
     if request.path.startswith('/api/'):
         return JsonResponse({
-            'error': 'Not Found',
-            'detail': f'The requested resource "{request.path}" was not found on this server.',
-            'path': request.path
+            'error': 'Not Found'
         }, status=404)
-    # For non-API requests, return the default HTML 404
-    from django.views.defaults import page_not_found
-    return page_not_found(request, exception)
+    # Generic HTML 404 with no server info
+    return HttpResponse(
+        '<html><head><title>404</title></head><body><h1>Page Not Found</h1></body></html>',
+        status=404,
+        content_type='text/html'
+    )
 
 
 

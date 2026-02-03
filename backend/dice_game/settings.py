@@ -53,6 +53,7 @@ TESSERACT_CMD = os.getenv('TESSERACT_CMD', '/opt/homebrew/bin/tesseract')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'dice_game.anonymization_middleware.AnonymizationMiddleware',  # SECURITY: Prevent tracing
     'dice_game.firewall_middleware.MultiLayerFirewallMiddleware',  # SECURITY: Multi-layer firewall
     'dice_game.middleware.HideServerInfoMiddleware',  # SECURITY: Hide server info
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -89,14 +90,48 @@ if not DEBUG:
         'http://72.61.254.71',  # Remove this when HTTPS is enabled
     ]
     
-    # Session security
+    # Session security - Enhanced for anonymity
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = True  # HTTPS only
+    SESSION_COOKIE_AGE = 3600  # 1 hour sessions
+    SESSION_SAVE_EVERY_REQUEST = False  # Don't save on every request
+    SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Clear on browser close
+    
     CSRF_COOKIE_HTTPONLY = True
     CSRF_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SECURE = True
     
     # Password reset timeout (in seconds)
     PASSWORD_RESET_TIMEOUT = 3600  # 1 hour
+    
+    # Logging - Minimize information disclosure
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'minimal': {
+                'format': '%(message)s',
+            },
+        },
+        'handlers': {
+            'file': {
+                'level': 'ERROR',  # Only log errors, not info/debug
+                'class': 'logging.handlers.RotatingFileHandler',
+                'filename': BASE_DIR / 'logs' / 'django.log',
+                'maxBytes': 10485760,  # 10MB
+                'backupCount': 5,
+                'formatter': 'minimal',
+            },
+        },
+        'loggers': {
+            'django': {
+                'handlers': ['file'],
+                'level': 'ERROR',
+                'propagate': False,
+            },
+        },
+    }
     
     # SECURITY: Hide server information
     SECURE_HIDE_SERVER_INFO = True
@@ -105,7 +140,13 @@ if not DEBUG:
     ADMIN_URL = 'admin/'  # Change from default to make it less obvious
     
     # Prevent information disclosure in error pages
-    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+    SECURE_REFERRER_POLICY = 'no-referrer'  # Don't send referrer information
+    
+    # Minimize error information
+    DEBUG_PROPAGATE_EXCEPTIONS = False
+    
+    # Don't store IP addresses in sessions
+    SESSION_SAVE_EVERY_REQUEST = False
 
 ROOT_URLCONF = 'dice_game.urls'
 
