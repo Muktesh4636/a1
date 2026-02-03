@@ -70,40 +70,41 @@ MIDDLEWARE = [
 
 # SECURITY: Production security settings
 if not DEBUG:
-    # HTTPS/SSL Settings
+    # HTTPS/SSL Settings - Only enable if SSL is actually configured
     SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'False') == 'True'
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    USE_HTTPS = SECURE_SSL_REDIRECT  # Use HTTPS settings only if SSL redirect is enabled
+    
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
     
-    # HSTS (HTTP Strict Transport Security)
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-    
-    # Additional security headers
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # HSTS (HTTP Strict Transport Security) - Only if HTTPS is enabled
+    if USE_HTTPS:
+        SECURE_HSTS_SECONDS = 31536000  # 1 year
+        SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+        SECURE_HSTS_PRELOAD = True
+        SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     
     # CSRF trusted origins for production
     CSRF_TRUSTED_ORIGINS = [
         'https://gunduata.online',
         'https://www.gunduata.online',
-        'http://72.61.254.71',  # Remove this when HTTPS is enabled
+        'http://72.61.254.71',  # HTTP access (remove when HTTPS is enabled)
+        'http://gunduata.online',  # HTTP fallback
+        'http://www.gunduata.online',  # HTTP fallback
     ]
     
     # Session security - Enhanced for anonymity
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
-    SESSION_COOKIE_SECURE = True  # HTTPS only
+    SESSION_COOKIE_SECURE = USE_HTTPS  # Only secure cookies if HTTPS is enabled
     SESSION_COOKIE_AGE = 3600  # 1 hour sessions
     SESSION_SAVE_EVERY_REQUEST = False  # Don't save on every request
     SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Clear on browser close
     
     CSRF_COOKIE_HTTPONLY = True
     CSRF_COOKIE_SAMESITE = 'Lax'
-    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = USE_HTTPS  # Only secure cookies if HTTPS is enabled
     
     # Password reset timeout (in seconds)
     PASSWORD_RESET_TIMEOUT = 3600  # 1 hour
