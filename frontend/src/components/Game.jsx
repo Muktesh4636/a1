@@ -137,9 +137,10 @@ export default function Game({ user, wallet, onRefreshWallet }) {
   const DiceDots = ({ number, isSelected }) => {
     const dotColor = isSelected ? 'bg-black' : 'bg-white';
     const diceBg = isSelected ? 'bg-amber-400' : 'bg-red-600';
+    const ringClass = isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-black/20' : '';
 
     return (
-      <div className={`dice-face relative w-12 h-12 ${diceBg} rounded-xl shadow-lg m-auto grid grid-cols-3 grid-rows-3 p-2 transition-colors duration-300`}>
+      <div className={`dice-face relative w-12 h-12 ${diceBg} rounded-xl shadow-lg m-auto grid grid-cols-3 grid-rows-3 p-2 transition-all duration-300 ${ringClass}`}>
         {number === 1 && <div className={`col-start-2 row-start-2 ${dotColor} rounded-full m-auto w-2.5 h-2.5 shadow-sm`}></div>}
         {number === 2 && (
           <>
@@ -311,9 +312,14 @@ export default function Game({ user, wallet, onRefreshWallet }) {
                    <div className="flex gap-2 bg-black/40 p-3 rounded-2xl border border-white/5 shadow-inner">
                      {[1, 2, 3, 4, 5, 6].map(i => {
                        const diceVal = currentRound?.dice_1 ? currentRound[`dice_${i}`] : lastRound[`dice_${i}`];
+                       const winningNumbers = currentRound?.dice_1 
+                         ? (currentRound.dice_result ? currentRound.dice_result.split(',').map(n => parseInt(n.trim())) : [])
+                         : (lastRound?.dice_result ? lastRound.dice_result.split(',').map(n => parseInt(n.trim())) : []);
+                       const isWinner = winningNumbers.includes(diceVal);
+                       
                        return (
-                         <div key={i} className="scale-75 origin-center">
-                           <DiceDots number={diceVal} isSelected={false} />
+                         <div key={i} className={`scale-75 origin-center ${isWinner ? 'animate-pulse' : 'opacity-60'}`}>
+                           <DiceDots number={diceVal} isSelected={isWinner} />
                          </div>
                        );
                      })}

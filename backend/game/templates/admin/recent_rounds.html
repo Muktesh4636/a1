@@ -330,8 +330,9 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 40px;
+            min-width: 40px;
             height: 40px;
+            padding: 0 10px;
             background: linear-gradient(135deg, #a8e6cf 0%, #d4f4dd 100%);
             color: #1a202c;
             border-radius: 8px;
@@ -650,7 +651,11 @@
                                 </td>
                                 <td>
                                     {% if round.dice_result %}
-                                        <span class="dice-result">{{ round.dice_result }}</span>
+                                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                            {% for result in round.dice_result_list %}
+                                                <span class="dice-result">{{ result }}</span>
+                                            {% endfor %}
+                                        </div>
                                     {% else %}
                                         <span style="color: #a0aec0;">-</span>
                                     {% endif %}

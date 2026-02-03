@@ -145,52 +145,9 @@ def admin_dashboard(request):
     
     admin_profile = get_admin_profile(request.user)
     
-    # Get current round
-    current_round = None
-    timer = 0
-    status = 'WAITING'
-
-    if redis_client:
-        try:
-            round_data = redis_client.get('current_round')
-            if round_data:
-                round_data = json.loads(round_data)
-                
-                # Check if Redis data is stale (older than ROUND_END_TIME + 10s)
-                is_stale = False
-                if 'start_time' in round_data:
-                    from django.utils import timezone
-                    from datetime import datetime
-                    try:
-                        start_time = datetime.fromisoformat(round_data['start_time'])
-                        # Ensure timezone awareness if needed
-                        if timezone.is_aware(timezone.now()) and not timezone.is_aware(start_time):
-                            start_time = timezone.make_aware(start_time)
-                        
-                        elapsed = (timezone.now() - start_time).total_seconds()
-                        if elapsed > settings.GAME_SETTINGS.get('ROUND_END_TIME', 80) + 10:
-                            is_stale = True
-                    except (ValueError, TypeError):
-                        pass
-                
-                if not is_stale:
-                    timer = int(redis_client.get('round_timer') or '0')
-                    status = round_data.get('status', 'WAITING')
-                    try:
-                        current_round = GameRound.objects.get(round_id=round_data['round_id'])
-                    except GameRound.DoesNotExist:
-                        pass
-        except Exception:
-            pass
-
-    # Fallback to latest round if Redis not available
-    if not current_round:
-        current_round = GameRound.objects.order_by('-start_time').first()
-        if current_round:
-            status = current_round.status
-            if current_round.start_time:
-                elapsed = (timezone.now() - current_round.start_time).total_seconds()
-                timer = int(elapsed) % get_game_setting('ROUND_END_TIME', 80)
+    # Get current round state using helper
+    from .utils import get_current_round_state
+    current_round, timer, status, _ = get_current_round_state(redis_client)
 
     total_bets = Bet.objects.count()
     total_amount = Bet.objects.aggregate(Sum('chip_amount'))['chip_amount__sum'] or 0
@@ -354,52 +311,9 @@ def toggle_dice_mode(request):
 @admin_required
 def admin_dashboard_data(request):
     """API endpoint to get admin dashboard data without page reload"""
-    # Get current round
-    current_round = None
-    timer = 0
-    status = 'WAITING'
-    
-    if redis_client:
-        try:
-            round_data = redis_client.get('current_round')
-            if round_data:
-                round_data = json.loads(round_data)
-                
-                # Check if Redis data is stale (older than ROUND_END_TIME + 10s)
-                is_stale = False
-                if 'start_time' in round_data:
-                    from django.utils import timezone
-                    from datetime import datetime
-                    try:
-                        start_time = datetime.fromisoformat(round_data['start_time'])
-                        # Ensure timezone awareness if needed
-                        if timezone.is_aware(timezone.now()) and not timezone.is_aware(start_time):
-                            start_time = timezone.make_aware(start_time)
-                        
-                        elapsed = (timezone.now() - start_time).total_seconds()
-                        if elapsed > settings.GAME_SETTINGS.get('ROUND_END_TIME', 80) + 10:
-                            is_stale = True
-                    except (ValueError, TypeError):
-                        pass
-                
-                if not is_stale:
-                    timer = int(redis_client.get('round_timer') or '0')
-                    status = round_data.get('status', 'WAITING')
-                    try:
-                        current_round = GameRound.objects.get(round_id=round_data['round_id'])
-                    except GameRound.DoesNotExist:
-                        pass
-        except Exception:
-            pass
-    
-    # Fallback to latest round if Redis not available
-    if not current_round:
-        current_round = GameRound.objects.order_by('-start_time').first()
-        if current_round:
-            status = current_round.status
-            if current_round.start_time:
-                elapsed = (timezone.now() - current_round.start_time).total_seconds()
-                timer = int(elapsed) % settings.GAME_SETTINGS.get('ROUND_END_TIME', 80)
+    # Get current round state using helper
+    from .utils import get_current_round_state
+    current_round, timer, status, _ = get_current_round_state(redis_client)
     
     # Get stats for current round
     current_round_total_amount = 0
@@ -434,6 +348,7 @@ def admin_dashboard_data(request):
         'current_round': {
             'round_id': current_round.round_id if current_round else None,
             'dice_result': current_round.dice_result if current_round else None,
+            'dice_result_list': current_round.dice_result_list if current_round else [],
             'dice_1': current_round.dice_1 if current_round else None,
             'dice_2': current_round.dice_2 if current_round else None,
             'dice_3': current_round.dice_3 if current_round else None,
@@ -461,32 +376,15 @@ def set_individual_dice_view(request):
         # Check if this is manual adjustment mode
         manual_adjust = request.POST.get('manual_adjust', 'false').lower() == 'true'
         
-        # Get current round
-        round_obj = None
-        timer = 0
-        if redis_client:
-            try:
-                round_data = redis_client.get('current_round')
-                if round_data:
-                    round_data = json.loads(round_data)
-                    timer = int(redis_client.get('round_timer') or '0')
-                    try:
-                        round_obj = GameRound.objects.get(round_id=round_data['round_id'])
-                    except GameRound.DoesNotExist:
-                        pass
-            except Exception:
-                pass
+        # Get current round state using helper
+        from .utils import get_current_round_state, get_game_setting
+        round_obj, timer, status, _ = get_current_round_state(redis_client)
         
-        # Fallback to latest round
-        if not round_obj:
-            round_obj = GameRound.objects.order_by('-start_time').first()
-            if round_obj and round_obj.start_time:
-                elapsed = (timezone.now() - round_obj.start_time).total_seconds()
-                timer = int(elapsed) % settings.GAME_SETTINGS.get('ROUND_END_TIME', 80)
+        # Get dice result time (needed for both restriction check and finalization logic)
+        dice_result_time = get_game_setting('DICE_RESULT_TIME', 51)
         
         # Check timer restriction only if NOT in manual adjust mode
         if not manual_adjust:
-            dice_result_time = settings.GAME_SETTINGS.get('DICE_RESULT_TIME', 40)
             if timer >= dice_result_time:
                 messages.error(request, f'Cannot set dice values after {dice_result_time} seconds. Use Manual Adjust mode to override.')
                 return redirect('dice_control')
@@ -564,9 +462,17 @@ def set_individual_dice_view(request):
                 most_common = determine_winning_number(valid_dice)
                 
                 round_obj.dice_result = most_common
-                round_obj.status = 'RESULT'
-                if not round_obj.result_time:
-                    round_obj.result_time = timezone.now()
+                
+                # Only finalize the round (status, payouts, broadcast) if we are at or past result time,
+                # or if we are in manual adjust mode (which usually means a past or forced update)
+                # This allows admin to "pre-set" dice before the result time
+                should_finalize = timer >= dice_result_time or manual_adjust
+                
+                if should_finalize:
+                    round_obj.status = 'RESULT'
+                    if not round_obj.result_time:
+                        round_obj.result_time = timezone.now()
+                
                 round_obj.save()
                 
                 # Create or update dice result record
@@ -590,41 +496,49 @@ def set_individual_dice_view(request):
                                 dice_val = getattr(round_obj, f'dice_{i}', None)
                                 if dice_val is not None:
                                     round_data[f'dice_{i}'] = dice_val
-                            round_data['status'] = 'RESULT'
+                            
+                            if should_finalize:
+                                round_data['status'] = 'RESULT'
+                            
                             redis_client.set('current_round', json.dumps(round_data))
                     except Exception:
                         pass
                 
-                # Calculate payouts based on dice values (frequency-based)
-                from .views import calculate_payouts
-                # Get complete dice values from round object
-                complete_dice = [
-                    round_obj.dice_1, round_obj.dice_2, round_obj.dice_3,
-                    round_obj.dice_4, round_obj.dice_5, round_obj.dice_6
-                ]
-                # Only calculate if we have all 6 dice values
-                if all(d is not None for d in complete_dice):
-                    calculate_payouts(round_obj, dice_result=most_common, dice_values=complete_dice)
-                
-                # Broadcast to WebSocket
-                from channels.layers import get_channel_layer
-                from asgiref.sync import async_to_sync
-                channel_layer = get_channel_layer()
-                if channel_layer:
-                    try:
-                        async_to_sync(channel_layer.group_send)(
-                            'game_room',
-                            {
-                                'type': 'dice_result',
-                                'result': most_common,
-                                'dice_values': complete_dice if all(d is not None for d in complete_dice) else valid_dice,
-                                'round_id': round_obj.round_id,
-                            }
-                        )
-                    except Exception:
-                        pass
+                # ONLY calculate payouts and broadcast if finalizing
+                if should_finalize:
+                    # Calculate payouts based on dice values (frequency-based)
+                    from .views import calculate_payouts
+                    # Get complete dice values from round object
+                    complete_dice = [
+                        round_obj.dice_1, round_obj.dice_2, round_obj.dice_3,
+                        round_obj.dice_4, round_obj.dice_5, round_obj.dice_6
+                    ]
+                    # Only calculate if we have all 6 dice values
+                    if all(d is not None for d in complete_dice):
+                        calculate_payouts(round_obj, dice_result=most_common, dice_values=complete_dice)
+                    
+                    # Broadcast to WebSocket
+                    from channels.layers import get_channel_layer
+                    from asgiref.sync import async_to_sync
+                    channel_layer = get_channel_layer()
+                    if channel_layer:
+                        try:
+                            async_to_sync(channel_layer.group_send)(
+                                'game_room',
+                                {
+                                    'type': 'dice_result',
+                                    'result': most_common,
+                                    'dice_values': complete_dice if all(d is not None for d in complete_dice) else valid_dice,
+                                    'round_id': round_obj.round_id,
+                                }
+                            )
+                        except Exception:
+                            pass
                 
                 mode_text = " (Manual Adjust)" if manual_adjust else ""
+                if not should_finalize:
+                    mode_text = " (Pre-set)"
+                
                 updated_text = ", ".join([f"D{i+1}:{v}" for i, v in enumerate(dice_updates.values())])
                 messages.success(request, f'Dice values updated{mode_text}: {updated_text} | Result: {most_common}')
             else:
@@ -641,52 +555,9 @@ def dice_control(request):
         messages.error(request, 'You do not have permission to access dice control.')
         return redirect('admin_dashboard')
         
-    # Get current round
-    current_round = None
-    timer = 0
-    status = 'WAITING'
-    
-    if redis_client:
-        try:
-            round_data = redis_client.get('current_round')
-            if round_data:
-                round_data = json.loads(round_data)
-                
-                # Check if Redis data is stale (older than ROUND_END_TIME + 10s)
-                is_stale = False
-                if 'start_time' in round_data:
-                    from django.utils import timezone
-                    from datetime import datetime
-                    try:
-                        start_time = datetime.fromisoformat(round_data['start_time'])
-                        # Ensure timezone awareness if needed
-                        if timezone.is_aware(timezone.now()) and not timezone.is_aware(start_time):
-                            start_time = timezone.make_aware(start_time)
-                        
-                        elapsed = (timezone.now() - start_time).total_seconds()
-                        if elapsed > settings.GAME_SETTINGS.get('ROUND_END_TIME', 80) + 10:
-                            is_stale = True
-                    except (ValueError, TypeError):
-                        pass
-                
-                if not is_stale:
-                    timer = int(redis_client.get('round_timer') or '0')
-                    status = round_data.get('status', 'WAITING')
-                    try:
-                        current_round = GameRound.objects.get(round_id=round_data['round_id'])
-                    except GameRound.DoesNotExist:
-                        pass
-        except Exception as e:
-            messages.warning(request, f'Redis connection error: {e}')
-    
-    # Fallback to latest round if Redis not available
-    if not current_round:
-        current_round = GameRound.objects.order_by('-start_time').first()
-        if current_round:
-            status = current_round.status
-            if current_round.start_time:
-                elapsed = (timezone.now() - current_round.start_time).total_seconds()
-                timer = int(elapsed) % settings.GAME_SETTINGS.get('ROUND_END_TIME', 80)
+    # Get current round state using helper
+    from .utils import get_current_round_state
+    current_round, timer, status, _ = get_current_round_state(redis_client)
     
     # Get stats for current round
     current_round_total_amount = 0
@@ -1534,6 +1405,7 @@ def create_admin(request):
             'can_view_transactions': request.POST.get('can_view_transactions') == 'on',
             'can_view_game_settings': request.POST.get('can_view_game_settings') == 'on',
             'can_view_admin_management': request.POST.get('can_view_admin_management') == 'on',
+            'can_manage_payment_methods': request.POST.get('can_manage_payment_methods') == 'on',
         }
         
         # Validation
@@ -1612,6 +1484,7 @@ def edit_admin(request, admin_id):
         permissions.can_view_transactions = request.POST.get('can_view_transactions') == 'on'
         permissions.can_view_game_settings = request.POST.get('can_view_game_settings') == 'on'
         permissions.can_view_admin_management = request.POST.get('can_view_admin_management') == 'on'
+        permissions.can_manage_payment_methods = request.POST.get('can_manage_payment_methods') == 'on'
         permissions.save()
         
         # Update username if provided
@@ -1829,72 +1702,6 @@ def players(request):
     })
 
     return render(request, 'admin/players.html', context)
-
-
-@admin_required
-def create_admin(request):
-    """Create a new admin account - only super admins can access"""
-    if not is_super_admin(request.user):
-        messages.error(request, 'Only Super Admins can create admin accounts.')
-        return redirect('players')
-
-    if request.method == 'POST':
-        username = request.POST.get('username', '').strip()
-        password = request.POST.get('password', '')
-        confirm_password = request.POST.get('confirm_password', '')
-        admin_type = request.POST.get('admin_type', '')
-
-        # Validation
-        if not all([username, password, confirm_password, admin_type]):
-            messages.error(request, 'All fields are required.')
-            return redirect('create_admin')
-
-        if password != confirm_password:
-            messages.error(request, 'Passwords do not match.')
-            return redirect('create_admin')
-
-        if len(password) < 4:
-            messages.error(request, 'Password must be at least 4 characters long.')
-            return redirect('create_admin')
-
-        if admin_type not in ['admin', 'super_admin']:
-            messages.error(request, 'Invalid admin type selected.')
-            return redirect('create_admin')
-
-        # Check if username already exists
-        if User.objects.filter(username=username).exists():
-            messages.error(request, f'Username "{username}" already exists.')
-            return redirect('create_admin')
-
-        try:
-            # Create the user (using a placeholder email)
-            email = f"{username}@gundu.ata"
-            user = User.objects.create_user(
-                username=username,
-                email=email,
-                password=password
-            )
-
-            # Set admin permissions
-            if admin_type == 'super_admin':
-                user.is_superuser = True
-                user.is_staff = True
-            else:  # admin
-                user.is_staff = True
-                user.is_superuser = False
-
-            user.save()
-
-            messages.success(request, f'Admin account "{username}" created successfully!')
-            return redirect('players')
-
-        except Exception as e:
-            messages.error(request, f'Error creating admin account: {str(e)}')
-            return redirect('create_admin')
-
-    return render(request, 'admin/create_admin.html', get_admin_context(request, {
-        'page': 'create_admin',
-    }))
 
 
 @login_required(login_url='/game-admin/login/')

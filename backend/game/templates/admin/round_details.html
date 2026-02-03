@@ -299,8 +299,9 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 40px;
+            min-width: 40px;
             height: 40px;
+            padding: 0 10px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border-radius: 8px;
@@ -439,8 +440,9 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 36px;
+            min-width: 36px;
             height: 36px;
+            padding: 0 8px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border-radius: 8px;
@@ -652,10 +654,14 @@
                         </value>
                     </div>
                     <div class="info-item">
-                        <label>Dice Result (Most Common)</label>
+                        <label>Dice Results / Winners</label>
                         <value>
                             {% if round.dice_result %}
-                                <span class="dice-value">{{ round.dice_result }}</span>
+                                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                    {% for result in round.dice_result_list %}
+                                        <span class="dice-value">{{ result }}</span>
+                                    {% endfor %}
+                                </div>
                             {% else %}
                                 <span style="color: #a0aec0;">Not set</span>
                             {% endif %}

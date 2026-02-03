@@ -41,6 +41,13 @@ class GameRound(models.Model):
     def __str__(self):
         return f"Round {self.round_id} - {self.status}"
 
+    @property
+    def dice_result_list(self):
+        """Returns dice_result as a list of strings"""
+        if not self.dice_result:
+            return []
+        return [r.strip() for r in str(self.dice_result).split(',') if r.strip()]
+
 
 class Bet(models.Model):
     """Bet model"""
@@ -120,5 +127,6 @@ class AdminPermissions(models.Model):
             'transactions': self.can_view_transactions,
             'game_settings': self.can_view_game_settings,
             'admin_management': self.can_view_admin_management,
+            'payment_methods': self.can_manage_payment_methods,
         }
 

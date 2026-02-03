@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.conf import settings
 from django.db import models
 from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
 from datetime import timedelta
 from decimal import Decimal
 import redis
@@ -59,6 +60,7 @@ def set_dice_mode(mode):
     return True
 
 
+@csrf_exempt
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def current_round(request):
@@ -71,10 +73,34 @@ def current_round(request):
             round_data = redis_client.get('current_round')
             if round_data:
                 round_data = json.loads(round_data)
-                try:
-                    round_obj = GameRound.objects.get(round_id=round_data['round_id'])
-                except GameRound.DoesNotExist:
-                    pass
+                
+                # Check for staleness even if in Redis
+                is_stale = False
+                if 'start_time' in round_data:
+                    from django.utils import timezone
+                    from datetime import datetime
+                    try:
+                        start_time = datetime.fromisoformat(round_data['start_time'])
+                        # Ensure timezone awareness if needed
+                        if timezone.is_aware(timezone.now()) and not timezone.is_aware(start_time):
+                            start_time = timezone.make_aware(start_time)
+                        
+                        elapsed = (timezone.now() - start_time).total_seconds()
+                        round_end_time = get_game_setting('ROUND_END_TIME', 80)
+                        if elapsed > round_end_time + 10:  # 10s buffer
+                            is_stale = True
+                    except (ValueError, TypeError):
+                        pass
+                
+                if not is_stale:
+                    try:
+                        round_obj = GameRound.objects.get(round_id=round_data['round_id'])
+                    except GameRound.DoesNotExist:
+                        pass
+                else:
+                    # Clear stale Redis data
+                    redis_client.delete('current_round')
+                    redis_client.delete('round_timer')
         except Exception:
             pass
     
@@ -157,6 +183,7 @@ def current_round(request):
     return Response(data)
 
 
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def place_bet(request):
@@ -273,6 +300,7 @@ def place_bet(request):
     return Response(response_data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
 
+@csrf_exempt
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def remove_bet(request, number):
@@ -371,6 +399,7 @@ def remove_bet(request, number):
     })
 
 
+@csrf_exempt
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def my_bets(request):
@@ -382,10 +411,34 @@ def my_bets(request):
             round_data = redis_client.get('current_round')
             if round_data:
                 round_data = json.loads(round_data)
-                try:
-                    round_obj = GameRound.objects.get(round_id=round_data['round_id'])
-                except GameRound.DoesNotExist:
-                    pass
+                
+                # Check for staleness even if in Redis
+                is_stale = False
+                if 'start_time' in round_data:
+                    from django.utils import timezone
+                    from datetime import datetime
+                    try:
+                        start_time = datetime.fromisoformat(round_data['start_time'])
+                        # Ensure timezone awareness if needed
+                        if timezone.is_aware(timezone.now()) and not timezone.is_aware(start_time):
+                            start_time = timezone.make_aware(start_time)
+                        
+                        elapsed = (timezone.now() - start_time).total_seconds()
+                        round_end_time = get_game_setting('ROUND_END_TIME', 80)
+                        if elapsed > round_end_time + 10:  # 10s buffer
+                            is_stale = True
+                    except (ValueError, TypeError):
+                        pass
+                
+                if not is_stale:
+                    try:
+                        round_obj = GameRound.objects.get(round_id=round_data['round_id'])
+                    except GameRound.DoesNotExist:
+                        pass
+                else:
+                    # Clear stale Redis data
+                    redis_client.delete('current_round')
+                    redis_client.delete('round_timer')
         except Exception:
             pass
     
@@ -401,6 +454,7 @@ def my_bets(request):
     return Response([])
 
 
+@csrf_exempt
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def betting_history(request):
@@ -485,6 +539,7 @@ def round_results(request, round_id=None):
     })
 
 
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def set_dice_result(request):
@@ -500,10 +555,34 @@ def set_dice_result(request):
             round_data = redis_client.get('current_round')
             if round_data:
                 round_data = json.loads(round_data)
-                try:
-                    round_obj = GameRound.objects.get(round_id=round_data['round_id'])
-                except GameRound.DoesNotExist:
-                    pass
+                
+                # Check for staleness even if in Redis
+                is_stale = False
+                if 'start_time' in round_data:
+                    from django.utils import timezone
+                    from datetime import datetime
+                    try:
+                        start_time = datetime.fromisoformat(round_data['start_time'])
+                        # Ensure timezone awareness if needed
+                        if timezone.is_aware(timezone.now()) and not timezone.is_aware(start_time):
+                            start_time = timezone.make_aware(start_time)
+                        
+                        elapsed = (timezone.now() - start_time).total_seconds()
+                        round_end_time = get_game_setting('ROUND_END_TIME', 80)
+                        if elapsed > round_end_time + 10:  # 10s buffer
+                            is_stale = True
+                    except (ValueError, TypeError):
+                        pass
+                
+                if not is_stale:
+                    try:
+                        round_obj = GameRound.objects.get(round_id=round_data['round_id'])
+                    except GameRound.DoesNotExist:
+                        pass
+                else:
+                    # Clear stale Redis data
+                    redis_client.delete('current_round')
+                    redis_client.delete('round_timer')
         except Exception:
             pass
     
@@ -518,10 +597,11 @@ def set_dice_result(request):
     dice_values = [round_obj.dice_1, round_obj.dice_2, round_obj.dice_3, 
                    round_obj.dice_4, round_obj.dice_5, round_obj.dice_6]
     
-    if all(v is not None for v in dice_values):
-        # Individual dice values are set - recalculate result from them
+    valid_dice = [v for v in dice_values if v is not None]
+    if valid_dice:
+        # Some or all individual dice values are set - recalculate result from them
         from .utils import determine_winning_number
-        result = determine_winning_number(dice_values)
+        result = determine_winning_number(valid_dice)
     
     # Set dice result (either from parameter or recalculated from dice values)
     round_obj.dice_result = result
@@ -578,6 +658,7 @@ def set_dice_result(request):
     return Response(data)
 
 
+@csrf_exempt
 @api_view(['GET', 'POST'])
 @permission_classes([IsAdminUser])
 def dice_mode(request):
@@ -600,6 +681,7 @@ def calculate_payouts(round_obj, dice_result=None, dice_values=None):
     - Any number appearing 2+ times is a winner
     - Payout multiplier = frequency (number of occurrences)
     - Example: If number appears 3 times, multiplier is 3 (bet 100 → get 300 total return)
+    - No commission: Player receives 100% of the payout.
 
     Args:
         round_obj: GameRound instance
@@ -634,39 +716,24 @@ def calculate_payouts(round_obj, dice_result=None, dice_values=None):
                     # Calculate total payout
                     total_payout_amount = bet.chip_amount * Decimal(str(payout_ratio))
                     
-                    # Apply 90/10 split: 90% to winner, 10% to pending payments
-                    winner_amount = total_payout_amount * Decimal('0.90')  # 90% to winner
-                    commission_amount = total_payout_amount * Decimal('0.10')  # 10% commission
-                    
                     # Store the total payout amount in bet.payout_amount for reference
                     bet.payout_amount = total_payout_amount
                     bet.is_winner = True
                     bet.save()
                     
-                    # Add only 90% to winner's wallet
+                    # Add 100% to winner's wallet
                     wallet = bet.user.wallet
                     balance_before = wallet.balance
-                    wallet.add(winner_amount)
+                    wallet.add(total_payout_amount)
                     balance_after = wallet.balance
                     
                     Transaction.objects.create(
                         user=bet.user,
                         transaction_type='WIN',
-                        amount=winner_amount,
+                        amount=total_payout_amount,
                         balance_before=balance_before,
                         balance_after=balance_after,
-                        description=f"Win on number {win_num} in round {round_obj.round_id}. Payout: {winner_amount} (90% of {total_payout_amount})"
-                    )
-                    
-                    # Create pending payment record for 10% commission
-                    from accounts.models import PendingPayment
-                    PendingPayment.objects.create(
-                        round=round_obj,
-                        bet=bet,
-                        user=bet.user,
-                        total_payout=total_payout_amount,
-                        winner_amount=winner_amount,
-                        commission_amount=commission_amount,
+                        description=f"Win on number {win_num} in round {round_obj.round_id}. Payout: {total_payout_amount}"
                     )
         return
     
@@ -692,43 +759,27 @@ def calculate_payouts(round_obj, dice_result=None, dice_values=None):
         
         for bet in winning_bets:
             # Calculate total payout: bet_amount * multiplier
-            # This gives the "extra" amount (not including original bet)
             total_payout_amount = bet.chip_amount * payout_multiplier
-            
-            # Apply 90/10 split: 90% to winner, 10% to pending payments
-            winner_amount = total_payout_amount * Decimal('0.90')  # 90% to winner
-            commission_amount = total_payout_amount * Decimal('0.10')  # 10% commission
             
             # Store the total payout amount in bet.payout_amount for reference
             bet.payout_amount = total_payout_amount
             bet.is_winner = True
             bet.save()
 
-            # Add only 90% to winner's wallet
+            # Add 100% to winner's wallet
             wallet = bet.user.wallet
             balance_before = wallet.balance
-            wallet.add(winner_amount)
+            wallet.add(total_payout_amount)
             balance_after = wallet.balance
 
-            # Create transaction for winner (90%)
+            # Create transaction for winner (100%)
             Transaction.objects.create(
                 user=bet.user,
                 transaction_type='WIN',
-                amount=winner_amount,
+                amount=total_payout_amount,
                 balance_before=balance_before,
                 balance_after=balance_after,
-                description=f"Win on number {winning_number} (appeared {frequency}x) in round {round_obj.round_id}. Payout: {winner_amount} (90% of {total_payout_amount}, multiplier: {payout_multiplier}x)"
-            )
-            
-            # Create pending payment record for 10% commission
-            from accounts.models import PendingPayment
-            PendingPayment.objects.create(
-                round=round_obj,
-                bet=bet,
-                user=bet.user,
-                total_payout=total_payout_amount,
-                winner_amount=winner_amount,
-                commission_amount=commission_amount,
+                description=f"Win on number {winning_number} (appeared {frequency}x) in round {round_obj.round_id}. Payout: {total_payout_amount} (Multiplier: {payout_multiplier}x)"
             )
 
 
@@ -881,6 +932,7 @@ def winning_results(request, round_id=None):
     })
 
 
+@csrf_exempt
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def game_stats(request):
@@ -966,7 +1018,8 @@ def last_round_results(request):
 @permission_classes([IsAuthenticated])
 def pending_payments(request):
     """
-    Get all pending payments (10% commission from payouts).
+    Get all pending payments (legacy 10% commission from payouts).
+    Note: New rounds follow the 'No Commission' rule and will not generate these records.
     Returns: List of pending payments with round, user, and commission details.
     
     Query params:

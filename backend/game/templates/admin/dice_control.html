@@ -319,7 +319,7 @@
             position: relative;
             width: 200px;
             height: 200px;
-            margin: 24px auto;
+            margin: 24px auto 60px auto;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -809,17 +809,22 @@
                     <div class="timer-label" id="timer-label">Betting Open</div>
                 </div>
 
-                <div class="status {{ status|lower }}" id="status-display">{{ status }}</div>
                 
                 {% if current_round %}
                     <div class="info">
                         <p><strong>Round ID:</strong> {{ current_round.round_id }}</p>
-                        <p><strong>Dice Result (Most Common):</strong> 
-                            {% if current_round.dice_result %}
-                                <span style="font-size: 24px; font-weight: bold; color: #4a5568;">{{ current_round.dice_result }}</span>
-                            {% else %}
-                                Not set
-                            {% endif %}
+                        <p><strong>Dice Results / Winners:</strong> 
+                            <span id="dice-results-winners-display">
+                                {% if current_round.dice_result %}
+                                    <span style="display: inline-flex; gap: 8px; align-items: center; vertical-align: middle;">
+                                        {% for result in current_round.dice_result_list %}
+                                            <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 36px; height: 36px; padding: 0 8px; background: #c6f6d5; color: #22543d; border-radius: 6px; font-size: 20px; font-weight: 700; border: 1px solid #9ae6b4;">{{ result }}</span>
+                                        {% endfor %}
+                                    </span>
+                                {% else %}
+                                    <span style="color: #a0aec0;">Not set</span>
+                                {% endif %}
+                            </span>
                         </p>
                         <p><strong>Individual Dice Values:</strong> 
                             <span id="individual-dice-values-display" style="font-size: 18px; font-weight: bold; color: #4a5568; margin-left: 8px; letter-spacing: 4px;">
@@ -914,13 +919,29 @@
                             </div>
                             {% endfor %}
                         </div>
-                        <div style="text-align: center; margin-top: 24px;">
-                            <button type="submit" 
-                                    class="dice-btn" 
-                                    id="submit-dice-btn"
-                                    style="width: auto; padding: 12px 32px; font-size: 16px; background: #93c5fd; color: #1e40af; border: none;">
-                                Set All Dice Values
-                            </button>
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 24px;">
+                            <div style="display: flex; align-items: center; gap: 8px; background: #fff5f5; padding: 8px 16px; border-radius: 8px; border: 1px solid #feb2b2;">
+                                <input type="checkbox" name="manual_adjust" id="manual_adjust" value="true" style="width: 18px; height: 18px; cursor: pointer;">
+                                <label for="manual_adjust" style="font-weight: 600; color: #c53030; cursor: pointer; margin-bottom: 0;">
+                                    ⚠️ Manual Override (Bypass timer & allow changes after set)
+                                </label>
+                            </div>
+                            
+                            <div style="display: flex; gap: 12px;">
+                                <button type="button" 
+                                        onclick="resetDiceSelection()"
+                                        class="dice-btn" 
+                                        style="width: auto; padding: 12px 24px; font-size: 16px; background: #edf2f7; color: #4a5568; border: 1px solid #e2e8f0;">
+                                    Reset Selection
+                                </button>
+                                
+                                <button type="submit" 
+                                        class="dice-btn" 
+                                        id="submit-dice-btn"
+                                        style="width: auto; padding: 12px 32px; font-size: 16px; background: #4299e1; color: white; border: none; box-shadow: 0 4px 6px rgba(66, 153, 225, 0.3);">
+                                    Set All Dice Values
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -934,12 +955,12 @@
                         <div class="form-group">
                             <label>Set All Dice to Same Number:</label>
                             <div class="dice-buttons">
-                                <button type="submit" name="result" value="1" class="dice-btn {% if current_round.dice_result == 1 and not current_round.dice_1 %}selected{% endif %}" {% if timer >= 40 %}disabled{% endif %}>1</button>
-                                <button type="submit" name="result" value="2" class="dice-btn {% if current_round.dice_result == 2 and not current_round.dice_1 %}selected{% endif %}" {% if timer >= 40 %}disabled{% endif %}>2</button>
-                                <button type="submit" name="result" value="3" class="dice-btn {% if current_round.dice_result == 3 and not current_round.dice_1 %}selected{% endif %}" {% if timer >= 40 %}disabled{% endif %}>3</button>
-                                <button type="submit" name="result" value="4" class="dice-btn {% if current_round.dice_result == 4 and not current_round.dice_1 %}selected{% endif %}" {% if timer >= 40 %}disabled{% endif %}>4</button>
-                                <button type="submit" name="result" value="5" class="dice-btn {% if current_round.dice_result == 5 and not current_round.dice_1 %}selected{% endif %}" {% if timer >= 40 %}disabled{% endif %}>5</button>
-                                <button type="submit" name="result" value="6" class="dice-btn {% if current_round.dice_result == 6 and not current_round.dice_1 %}selected{% endif %}" {% if timer >= 40 %}disabled{% endif %}>6</button>
+                                <button type="submit" name="result" value="1" class="dice-btn {% if '1' in current_round.dice_result_list %}selected{% endif %}" {% if timer >= dice_result_time %}disabled{% endif %}>1</button>
+                                <button type="submit" name="result" value="2" class="dice-btn {% if '2' in current_round.dice_result_list %}selected{% endif %}" {% if timer >= dice_result_time %}disabled{% endif %}>2</button>
+                                <button type="submit" name="result" value="3" class="dice-btn {% if '3' in current_round.dice_result_list %}selected{% endif %}" {% if timer >= dice_result_time %}disabled{% endif %}>3</button>
+                                <button type="submit" name="result" value="4" class="dice-btn {% if '4' in current_round.dice_result_list %}selected{% endif %}" {% if timer >= dice_result_time %}disabled{% endif %}>4</button>
+                                <button type="submit" name="result" value="5" class="dice-btn {% if '5' in current_round.dice_result_list %}selected{% endif %}" {% if timer >= dice_result_time %}disabled{% endif %}>5</button>
+                                <button type="submit" name="result" value="6" class="dice-btn {% if '6' in current_round.dice_result_list %}selected{% endif %}" {% if timer >= dice_result_time %}disabled{% endif %}>6</button>
                             </div>
                         </div>
                     </form>
@@ -955,6 +976,7 @@
         const maxReconnectAttempts = 5;
         let currentTimer = {{ timer|default:1 }}; // Default to 1 if no timer value
         let clientSideTimer = null; // Client-side timer for continuous countdown
+        let lastRoundId = '{% if current_round %}{{ current_round.round_id }}{% endif %}';
         
         // WebSocket connection setup
         function connectWebSocket() {
@@ -1010,7 +1032,7 @@
         // Start client-side timer for continuous countdown
         function startClientSideTimer() {
             if (clientSideTimer) {
-                clearInterval(clientSideTimer);
+                return; // Already running
             }
             clientSideTimer = setInterval(function() {
                 // Always increment timer (it will wrap around at round end)
@@ -1040,8 +1062,12 @@
                     // Real-time timer update from WebSocket - extract timer value
                     if (data.timer !== undefined && data.timer !== null) {
                         const newTimer = parseInt(data.timer) || 1;
-                        currentTimer = newTimer;
-                        updateTimerDisplay();
+                        // Only sync if drift is more than 2 seconds to avoid jitter, 
+                        // or if it's a major state change (timer reset)
+                        if (Math.abs(currentTimer - newTimer) > 2 || newTimer < currentTimer) {
+                            currentTimer = newTimer;
+                            updateTimerDisplay();
+                        }
                         // Ensure client-side timer is running
                         startClientSideTimer();
                     }
@@ -1053,8 +1079,11 @@
                 case 'game_state':
                     // Initial game state or state update - extract timer from WebSocket
                     if (data.timer !== undefined && data.timer !== null) {
-                        currentTimer = parseInt(data.timer) || 1;
-                        updateTimerDisplay();
+                        const newTimer = parseInt(data.timer) || 1;
+                        if (Math.abs(currentTimer - newTimer) > 2 || newTimer < currentTimer) {
+                            currentTimer = newTimer;
+                            updateTimerDisplay();
+                        }
                         startClientSideTimer(); // Start continuous timer
                     }
                     if (data.status) {
@@ -1065,7 +1094,8 @@
                 case 'game_start':
                     // New round started - extract timer from WebSocket
                     if (data.timer !== undefined && data.timer !== null) {
-                        currentTimer = parseInt(data.timer) || 1;
+                        const newTimer = parseInt(data.timer) || 1;
+                        currentTimer = newTimer;
                         updateTimerDisplay();
                         startClientSideTimer(); // Start continuous timer
                     }
@@ -1077,8 +1107,11 @@
                 case 'dice_result':
                     // Dice result announced - extract timer from WebSocket
                     if (data.timer !== undefined && data.timer !== null) {
-                        currentTimer = parseInt(data.timer) || 1;
-                        updateTimerDisplay();
+                        const newTimer = parseInt(data.timer) || 1;
+                        if (Math.abs(currentTimer - newTimer) > 2) {
+                            currentTimer = newTimer;
+                            updateTimerDisplay();
+                        }
                         startClientSideTimer(); // Start continuous timer
                     }
                     if (data.status) {
@@ -1089,8 +1122,11 @@
                 case 'game_end':
                     // Round ended - extract timer from WebSocket
                     if (data.timer !== undefined && data.timer !== null) {
-                        currentTimer = parseInt(data.timer) || 1;
-                        updateTimerDisplay();
+                        const newTimer = parseInt(data.timer) || 1;
+                        if (Math.abs(currentTimer - newTimer) > 2) {
+                            currentTimer = newTimer;
+                            updateTimerDisplay();
+                        }
                         startClientSideTimer(); // Start continuous timer
                     }
                     if (data.status) {
@@ -1217,6 +1253,21 @@
                         infoAmount.textContent = data.current_round_total_amount.toFixed(2);
                     }
                     
+                    // Update winners display in info section
+                    const winnersDisplay = document.getElementById('dice-results-winners-display');
+                    if (winnersDisplay) {
+                        if (data.current_round.dice_result && data.current_round.dice_result_list && data.current_round.dice_result_list.length > 0) {
+                            let winnersHtml = '<span style="display: inline-flex; gap: 8px; align-items: center; vertical-align: middle;">';
+                            data.current_round.dice_result_list.forEach(result => {
+                                winnersHtml += `<span style="display: inline-flex; align-items: center; justify-content: center; min-width: 36px; height: 36px; padding: 0 8px; background: #c6f6d5; color: #22543d; border-radius: 6px; font-size: 20px; font-weight: 700; border: 1px solid #9ae6b4;">${result}</span>`;
+                            });
+                            winnersHtml += '</span>';
+                            winnersDisplay.innerHTML = winnersHtml;
+                        } else {
+                            winnersDisplay.innerHTML = '<span style="color: #a0aec0;">Not set</span>';
+                        }
+                    }
+                    
                     // Update individual dice values display in info section
                     const diceValuesDisplay = document.getElementById('individual-dice-values-display');
                     if (diceValuesDisplay) {
@@ -1261,26 +1312,42 @@
                 
                 // Update individual dice values display
                 if (data.current_round) {
+                    // Check if round has changed - if so, reset selection
+                    const roundChanged = lastRoundId && data.current_round.round_id !== lastRoundId;
+                    
+                    if (data.current_round.round_id !== lastRoundId) {
+                        if (roundChanged) {
+                            console.log('🔄 Round changed from', lastRoundId, 'to', data.current_round.round_id, '- Resetting dice selection');
+                        }
+                        lastRoundId = data.current_round.round_id;
+                    }
+
+                    // Only sync from server if Manual Override is NOT checked
+                    // This allows the admin to change values locally without AJAX resetting them
+                    const isManualOverride = document.getElementById('manual_adjust')?.checked;
+
                     for (let i = 1; i <= 6; i++) {
                         const diceValue = data.current_round[`dice_${i}`];
-                        const label = document.querySelector(`label:has(+ .dice-buttons)`);
-                        // Find the label for this dice
                         const diceControlGroup = document.querySelectorAll('.dice-control-group')[i - 1];
+                        
                         if (diceControlGroup) {
                             const label = diceControlGroup.querySelector('label');
-                            if (label) {
-                                const valueSpan = label.querySelector('span');
-                                if (valueSpan) {
-                                    valueSpan.textContent = diceValue || '';
-                                }
-                            }
-                            
-                            // Update selected state of buttons
+                            const valueSpan = label ? label.querySelector('span') : null;
                             const hiddenInput = document.getElementById(`dice_${i}_value`);
-                            if (hiddenInput && diceValue) {
-                                hiddenInput.value = diceValue;
-                                // Update button states
-                                const buttons = diceControlGroup.querySelectorAll('.dice-select-btn');
+                            const buttons = diceControlGroup.querySelectorAll('.dice-select-btn');
+
+                            if (roundChanged) {
+                                // Clear selection on round change
+                                if (valueSpan) valueSpan.textContent = '';
+                                if (hiddenInput) hiddenInput.value = '';
+                                buttons.forEach(btn => btn.classList.remove('selected'));
+                                // Also uncheck manual override on round change
+                                const overrideCheckbox = document.getElementById('manual_adjust');
+                                if (overrideCheckbox) overrideCheckbox.checked = false;
+                            } else if (!isManualOverride && diceValue !== null && diceValue !== undefined) {
+                                // Update with server value if available AND not in override mode
+                                if (valueSpan) valueSpan.textContent = diceValue;
+                                if (hiddenInput) hiddenInput.value = diceValue;
                                 buttons.forEach(btn => {
                                     btn.classList.remove('selected');
                                     if (btn.getAttribute('data-value') == diceValue) {
@@ -1359,30 +1426,24 @@
             });
         });
 
-        // Sidebar scroll position preservation
-        const sidebarWrapper = document.querySelector('.sidebar-menu-wrapper');
-        if (sidebarWrapper) {
-            // Restore scroll position on page load
-            const savedScrollPos = localStorage.getItem('sidebarScrollPos');
-            if (savedScrollPos) {
-                sidebarWrapper.scrollTop = parseInt(savedScrollPos);
+        // Reset Dice Selection locally
+        function resetDiceSelection() {
+            if (!confirm('Are you sure you want to reset your current selection?')) return;
+            
+            for (let i = 1; i <= 6; i++) {
+                const hiddenInput = document.getElementById(`dice_${i}_value`);
+                if (hiddenInput) hiddenInput.value = '';
+                
+                const diceControlGroup = document.querySelectorAll('.dice-control-group')[i - 1];
+                if (diceControlGroup) {
+                    const label = diceControlGroup.querySelector('label');
+                    const valueSpan = label ? label.querySelector('span') : null;
+                    if (valueSpan) valueSpan.textContent = '';
+                    
+                    const buttons = diceControlGroup.querySelectorAll('.dice-select-btn');
+                    buttons.forEach(btn => btn.classList.remove('selected'));
+                }
             }
-
-            // Save scroll position before navigation
-            const sidebarLinks = sidebarWrapper.querySelectorAll('a');
-            sidebarLinks.forEach(link => {
-                link.addEventListener('click', function() {
-                    localStorage.setItem('sidebarScrollPos', sidebarWrapper.scrollTop);
-                });
-            });
-
-            // Also save on form submissions that navigate away
-            const forms = document.querySelectorAll('form');
-            forms.forEach(form => {
-                form.addEventListener('submit', function() {
-                    localStorage.setItem('sidebarScrollPos', sidebarWrapper.scrollTop);
-                });
-            });
         }
     </script>
 </body>
