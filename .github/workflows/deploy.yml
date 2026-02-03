@@ -50,7 +50,7 @@ jobs:
             
             # Verify deployment
             echo "🔍 Verifying deployment..."
-            HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8232/ || echo '000')
+            HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost/ || echo '000')
             if [ "$HTTP_CODE" = '200' ]; then
               echo '✅ Deployment successful! Server is responding.'
             else
@@ -59,5 +59,5 @@ jobs:
             fi
             
             echo "✅ Deployment complete!"
-            echo "🌐 Server URL: http://${{ secrets.SERVER_HOST }}:8232/"
+            echo "🌐 Server URL: http://${{ secrets.SERVER_HOST }}/"
 
