@@ -53,6 +53,7 @@ TESSERACT_CMD = os.getenv('TESSERACT_CMD', '/opt/homebrew/bin/tesseract')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'dice_game.firewall_middleware.MultiLayerFirewallMiddleware',  # SECURITY: Multi-layer firewall
     'dice_game.middleware.HideServerInfoMiddleware',  # SECURITY: Hide server info
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
