@@ -102,10 +102,25 @@ def admin_login(request):
     cache_key = f'login_attempts_{client_ip}'
     failed_logins_key = f'failed_logins_{client_ip}'
     
-    # Check rate limit: max 5 attempts per 15 minutes
+    # Check rate limit: max 5 attempts per 15 minutes (short-term protection)
     login_attempts = cache.get(cache_key, 0)
     if login_attempts >= 5:
         error_message = 'Too many login attempts. Please try again in 15 minutes.'
+        context = {
+            'next': request.GET.get('next', '/game-admin/dashboard/'),
+            'error_message': error_message,
+        }
+        return render(request, 'admin/login.html', context)
+    
+    # Check brute force protection: 50 failed attempts = 2 hour ban (configurable)
+    import os
+    brute_force_threshold = int(os.getenv('BRUTE_FORCE_THRESHOLD', '50'))
+    brute_force_ban_time = int(os.getenv('BRUTE_FORCE_BAN_TIME', '7200'))
+    
+    failed_logins = cache.get(failed_logins_key, 0)
+    if failed_logins >= brute_force_threshold:
+        ban_hours = brute_force_ban_time // 3600
+        error_message = f'Too many failed login attempts. Your IP has been blocked for {ban_hours} hours.'
         context = {
             'next': request.GET.get('next', '/game-admin/dashboard/'),
             'error_message': error_message,

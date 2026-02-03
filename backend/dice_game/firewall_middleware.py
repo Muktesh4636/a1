@@ -35,6 +35,9 @@ class MultiLayerFirewallMiddleware(MiddlewareMixin):
         # Rate limit settings
         self.rate_limit_requests = int(os.getenv('RATE_LIMIT_REQUESTS', '100'))
         self.rate_limit_window = int(os.getenv('RATE_LIMIT_WINDOW', '60'))  # seconds
+        # Brute force protection settings
+        self.brute_force_threshold = int(os.getenv('BRUTE_FORCE_THRESHOLD', '50'))  # 50 failed attempts
+        self.brute_force_ban_time = int(os.getenv('BRUTE_FORCE_BAN_TIME', '7200'))  # 2 hours
         
     def get_client_ip(self, request):
         """Extract real client IP address"""
@@ -107,9 +110,9 @@ class MultiLayerFirewallMiddleware(MiddlewareMixin):
             failed_attempts += 1
             cache.set(failed_attempts_key, failed_attempts, 900)  # 15 minutes
             
-            # Block if too many failed attempts
-            if failed_attempts >= 10:
-                cache.set(f'blocked_ip_{ip}', True, 7200)  # Block for 2 hours
+            # Block if too many failed attempts (configurable threshold)
+            if failed_attempts >= self.brute_force_threshold:
+                cache.set(f'blocked_ip_{ip}', True, self.brute_force_ban_time)
                 return False
         
         return True

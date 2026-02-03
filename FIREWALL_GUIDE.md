@@ -7,7 +7,7 @@ This guide explains the comprehensive firewall protection system implemented to 
 ### **Layer 1: Application-Level Firewall (Django Middleware)**
 - ✅ IP Blacklist/Whitelist
 - ✅ Rate limiting per IP (100 requests/minute)
-- ✅ Brute force detection (10 failed attempts = 2 hour ban)
+- ✅ Brute force detection (50 failed attempts = 2 hour ban)
 - ✅ Suspicious activity detection (SQL injection, XSS, path traversal)
 - ✅ Automatic IP blocking for attacks
 
@@ -107,7 +107,7 @@ ADMIN_WHITELIST_IPS=your.office.ip,your.home.ip
 
 ### **4. Brute Force Protection**
 - **Failed Login Attempts**: Tracked per IP
-- **Threshold**: 10 failed attempts
+- **Threshold**: 50 failed attempts
 - **Action**: IP blocked for 2 hours
 - **Reset**: Automatically after ban period
 
