@@ -36,8 +36,8 @@ A real-time multiplayer dice betting game platform where users can place bets on
 - **Transaction History**: Complete audit trail of all financial operations
 
 ### Production URL
-- **Backend API**: `http://159.198.46.36:8232/`
-- **Admin Panel**: `http://159.198.46.36:8232/game-admin/`
+- **Backend API**: `http://72.61.254.71:8232/`
+- **Admin Panel**: `http://72.61.254.71:8232/game-admin/`
 - **Frontend**: Configured separately
 
 ---
@@ -285,7 +285,7 @@ Create a `.env` file in the `backend/` directory:
 # Django Settings
 DEBUG=False
 SECRET_KEY=your-secret-key-here
-ALLOWED_HOSTS=159.198.46.36,localhost,127.0.0.1
+ALLOWED_HOSTS=72.61.254.71,localhost,127.0.0.1
 
 # Database
 USE_SQLITE=False  # Set True for SQLite, False for PostgreSQL
@@ -332,7 +332,7 @@ Key services:
 
 ### Base URL
 ```
-http://159.198.46.36:8232/api/
+http://72.61.254.71:8232/api/
 ```
 
 ### Authentication
@@ -511,7 +511,7 @@ Authorization: Bearer <token>
 ## Admin Panel
 
 ### Access
-- **URL**: `http://159.198.46.36:8232/game-admin/`
+- **URL**: `http://72.61.254.71:8232/game-admin/`
 - **Login**: `/game-admin/login/`
 
 ### Features
@@ -574,7 +574,7 @@ frontend/
 The frontend connects to WebSocket for real-time updates:
 
 ```javascript
-const ws = new WebSocket('ws://159.198.46.36:8232/ws/game/');
+const ws = new WebSocket('ws://72.61.254.71:8232/ws/game/');
 ws.onmessage = (event) => {
   const data = JSON.parse(event.data);
   // Handle game state updates
@@ -587,7 +587,7 @@ ws.onmessage = (event) => {
 
 ### Connection
 ```
-ws://159.198.46.36:8232/ws/game/
+ws://72.61.254.71:8232/ws/game/
 ```
 
 ### Message Types

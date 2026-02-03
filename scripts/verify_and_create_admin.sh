@@ -8,7 +8,7 @@ echo "=================================================="
 echo ""
 
 # Server details
-SERVER_HOST="159.198.46.36"
+SERVER_HOST="72.61.254.71"
 SERVER_USER="root"
 DEPLOY_DIR="/opt/dice_game"
 
@@ -81,7 +81,7 @@ try:
         print("=" * 50)
         print(f"Username: {username}")
         print(f"Password: {password}")
-        print(f"Login URL: http://159.198.46.36:8232/game-admin/login/")
+        print(f"Login URL: http://72.61.254.71:8232/game-admin/login/")
     else:
         print("❌ Authentication test: FAILED")
         print("Password may not be set correctly")

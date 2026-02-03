@@ -18,7 +18,7 @@
 
 The Admin Panel is a comprehensive management interface for the Dice Betting Game. It provides full control over game rounds, dice results, user management, financial operations, and system settings.
 
-**Base URL:** `http://159.198.46.36:8232/game-admin/`
+**Base URL:** `http://72.61.254.71:8232/game-admin/`
 
 **Main Features:**
 - Real-time game monitoring and control

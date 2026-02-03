@@ -52,5 +52,5 @@ echo ""
 echo "✅ Done! You can now login with:"
 echo "   Username: muktesh"
 echo "   Password: muktesh123"
-echo "   URL: http://159.198.46.36:8232/game-admin/login/"
+echo "   URL: http://72.61.254.71:8232/game-admin/login/"
 

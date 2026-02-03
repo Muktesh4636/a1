@@ -7,7 +7,7 @@ echo "🚀 Deploying Code to Server..."
 echo "================================"
 echo ""
 
-SERVER_HOST="${SERVER_HOST:-159.198.46.36}"
+SERVER_HOST="${SERVER_HOST:-72.61.254.71}"
 SERVER_USER="${SERVER_USER:-root}"
 DEPLOY_DIR="${DEPLOY_DIR:-/opt/dice_game}"
 

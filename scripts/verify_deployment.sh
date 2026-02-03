@@ -86,8 +86,8 @@ echo ""
 if [ "$HTTP_CODE" = "200" ] && [ "$ALL_UP" = "4" ]; then
     echo "✅ All services are running and responding!"
     echo ""
-    echo "🌐 Server URL: http://159.198.46.36:8232/"
-    echo "🔌 WebSocket: ws://159.198.46.36:8232/ws/game/"
+    echo "🌐 Server URL: http://72.61.254.71:8232/"
+    echo "🔌 WebSocket: ws://72.61.254.71:8232/ws/game/"
 else
     echo "⚠️  Some services may need attention"
     echo ""

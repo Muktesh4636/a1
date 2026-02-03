@@ -113,7 +113,7 @@ if auth1:
     print("=" * 70)
     print(f"Username: {username}")
     print(f"Password: {password}")
-    print(f"Login URL: http://159.198.46.36:8232/game-admin/login/")
+    print(f"Login URL: http://72.61.254.71:8232/game-admin/login/")
     print("=" * 70)
 else:
     print("❌ WARNING: Authentication test failed")

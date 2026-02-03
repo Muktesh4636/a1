@@ -55,7 +55,7 @@ print(f"Superuser: {user.is_superuser}")
 print(f"Staff: {user.is_staff}")
 print(f"Active: {user.is_active}")
 print()
-print("Login URL: http://159.198.46.36:8232/game-admin/login/")
+print("Login URL: http://72.61.254.71:8232/game-admin/login/")
 print("=" * 60)
 EOF
 

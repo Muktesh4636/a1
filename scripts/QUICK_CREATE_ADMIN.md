@@ -5,7 +5,7 @@
 SSH into your server and run:
 
 ```bash
-ssh root@159.198.46.36
+ssh root@72.61.254.71
 cd /opt/dice_game/backend
 docker compose exec -T web python manage.py shell << 'EOF'
 from accounts.models import User
@@ -39,14 +39,14 @@ EOF
 Run the script on the server:
 
 ```bash
-ssh root@159.198.46.36
+ssh root@72.61.254.71
 cd /opt/dice_game
 bash scripts/create_server_admin.sh local
 ```
 
 ## Login After Creation
 
-- **URL:** http://159.198.46.36:8232/game-admin/login/
+- **URL:** http://72.61.254.71:8232/game-admin/login/
 - **Username:** muktesh
 - **Password:** muktesh123
 
