@@ -1,10 +1,13 @@
 """
 Cloudflare IP verification middleware
 Only allows requests from Cloudflare IPs, blocks direct access to real server IP
+Also prevents domain-based tracing
 """
 from django.http import HttpResponseForbidden
 from django.utils.deprecation import MiddlewareMixin
+from django.core.cache import cache
 import os
+import time
 
 
 class CloudflareOnlyMiddleware(MiddlewareMixin):
@@ -62,7 +65,7 @@ class CloudflareOnlyMiddleware(MiddlewareMixin):
         return False
     
     def process_request(self, request):
-        """Block direct access to real server IP"""
+        """Block direct access to real server IP and prevent domain tracing"""
         if not self.enforce_cloudflare:
             return None
         
@@ -72,10 +75,22 @@ class CloudflareOnlyMiddleware(MiddlewareMixin):
         # Check if request came from Cloudflare
         if not self.is_cloudflare_ip(connecting_ip):
             # Direct access to real IP - BLOCK IT
+            # Also log the attempt to detect domain tracing attempts
+            cache_key = f'direct_access_attempt_{connecting_ip}'
+            attempts = cache.get(cache_key, 0) + 1
+            cache.set(cache_key, attempts, 3600)
+            
+            # If multiple direct access attempts, permanently block
+            if attempts >= 3:
+                from .attack_detection import AttackDetector
+                AttackDetector.block_ip_permanently(connecting_ip)
+            
             return HttpResponseForbidden(
                 '<h1>403 Forbidden</h1><p>Direct access not allowed. Please use the domain name.</p>',
                 content_type='text/html'
             )
         
         # Request came through Cloudflare - allow it
+        # Real client IP is in CF-Connecting-IP header (from Cloudflare)
+        # This prevents tracing back to domain registrant
         return None
