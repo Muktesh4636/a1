@@ -20,6 +20,24 @@ services:
     networks:
       - dice_game_network
 
+  # Redis for Caching and WebSockets
+  redis:
+    image: redis:7-alpine
+    container_name: dice_game_redis
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - dice_game_network
+
   # Django Application (Daphne ASGI Server)
   web:
     build:
@@ -49,7 +67,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
       - DB_HOST=db
       - DB_PORT=5432
-      - REDIS_HOST=72.61.254.71
+      - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_DB=${REDIS_DB:-0}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
@@ -59,11 +77,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - dice_game_network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     deploy:
       resources:
         limits:
@@ -73,7 +91,7 @@ services:
           cpus: '0.5'
           memory: 512M
 
-  # Game Timer Service (runs separately to avoid conflicts)
+  # Game Timer Service
   game_timer:
     build:
       context: ./backend
@@ -92,7 +110,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
       - DB_HOST=db
       - DB_PORT=5432
-      - REDIS_HOST=72.61.254.71
+      - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_DB=${REDIS_DB:-0}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
@@ -101,13 +119,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       web:
         condition: service_started
     restart: unless-stopped
     networks:
       - dice_game_network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     deploy:
       resources:
         limits:
@@ -119,6 +137,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
     driver: local
   static_volume:
     driver: local
