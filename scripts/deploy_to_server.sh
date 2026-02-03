@@ -22,13 +22,29 @@ cd ${DEPLOY_DIR}
 
 echo '📦 Pulling latest code from repository...'
 git fetch origin
+
+# Stash any local changes to avoid merge conflicts
+echo '💾 Stashing local changes...'
+git stash || true
+
+# Reset to latest code (discards any uncommitted changes)
+echo '🔄 Resetting to latest code...'
 git reset --hard origin/main
+
+# Apply stashed changes if any (optional - comment out if you want clean reset)
+# git stash pop || true
+
 echo '✅ Code updated'
 echo ''
 
+echo '🔄 Stopping and removing old containers...'
+docker compose down || true
+
+echo '🧹 Cleaning up old containers (if any)...'
+docker rm -f dice_game_redis dice_game_db dice_game_web dice_game_game_timer 2>/dev/null || true
+
 echo '🔄 Restarting Docker services...'
-docker compose down
-docker compose up -d --build
+docker compose up -d --build --force-recreate
 echo '✅ Services restarted'
 echo ''
 

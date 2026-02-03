@@ -93,6 +93,12 @@
                 <span class="menu-icon">🏦</span> Payment Methods
             </a></li>
             {% endif %}
+
+            {% if is_super_admin %}
+            <li><a href="{% url 'attack_logs' %}" {% if page == 'attack_logs' %}class="active"{% endif %}>
+                <span class="menu-icon">🛡️</span> Attack Logs
+            </a></li>
+            {% endif %}
             
         </ul>
     </div>

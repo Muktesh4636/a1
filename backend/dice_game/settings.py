@@ -55,7 +55,9 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'dice_game.cloudflare_middleware.CloudflareOnlyMiddleware',  # SECURITY: Block direct IP access
     'dice_game.anonymization_middleware.AnonymizationMiddleware',  # SECURITY: Prevent tracing
+    'dice_game.vpn_protection_middleware.VPNProtectionMiddleware',  # SECURITY: VPN-resistant protection
     'dice_game.firewall_middleware.MultiLayerFirewallMiddleware',  # SECURITY: Multi-layer firewall
+    'dice_game.api_security_middleware.APISecurityMiddleware',  # SECURITY: API-specific protection
     'dice_game.middleware.HideServerInfoMiddleware',  # SECURITY: Hide server info
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -269,6 +271,7 @@ REST_FRAMEWORK = {
         'user': '1000/hour',  # Authenticated users: 1000 requests per hour
         'login': '5/minute',  # Login attempts: 5 per minute
         'bet': '60/minute',  # Betting: 60 bets per minute
+        'api': '200/hour',  # API endpoints: 200 requests per hour per IP
     }
 }
 

@@ -39,5 +39,6 @@ urlpatterns = [
     path('payment-methods/<int:pk>/edit/', admin_views.edit_payment_method, name='edit_payment_method'),
     path('payment-methods/<int:pk>/delete/', admin_views.delete_payment_method, name='delete_payment_method'),
     path('payment-methods/<int:pk>/toggle/', admin_views.toggle_payment_method, name='toggle_payment_method'),
+    path('attack-logs/', admin_views.attack_logs, name='attack_logs'),
 ]
 

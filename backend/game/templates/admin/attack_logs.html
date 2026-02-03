@@ -1,0 +1,180 @@
+{% extends "admin/_admin_base.html" %}
+
+{% block title %}Attack Logs - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="admin-content-wrapper">
+    <div class="page-header">
+        <h1>🛡️ Attack Logs & Blocked IPs</h1>
+        <p class="page-description">Monitor all hacking attempts and view attacker IP addresses</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        <div class="stat-card" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 20px; border-radius: 12px; color: white;">
+            <div class="stat-value" style="font-size: 32px; font-weight: bold;">{{ attack_stats.total_attacks }}</div>
+            <div class="stat-label" style="font-size: 14px; opacity: 0.9;">Total Attacks</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%); padding: 20px; border-radius: 12px; color: white;">
+            <div class="stat-value" style="font-size: 32px; font-weight: bold;">{{ attack_stats.unique_ips }}</div>
+            <div class="stat-label" style="font-size: 14px; opacity: 0.9;">Unique Attacker IPs</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); padding: 20px; border-radius: 12px; color: white;">
+            <div class="stat-value" style="font-size: 32px; font-weight: bold;">{{ blocked_ips|length }}</div>
+            <div class="stat-label" style="font-size: 14px; opacity: 0.9;">Permanently Blocked</div>
+        </div>
+    </div>
+
+    <!-- Top Attackers -->
+    {% if attack_stats.top_attackers %}
+    <div class="section-card" style="background: #1e293b; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+        <h2 style="color: white; margin-bottom: 16px; font-size: 20px;">🔴 Top Attacking IPs</h2>
+        <div class="table-responsive">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <th style="padding: 12px; text-align: left; color: rgba(255,255,255,0.7); font-weight: 600;">IP Address</th>
+                        <th style="padding: 12px; text-align: right; color: rgba(255,255,255,0.7); font-weight: 600;">Attack Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ip, count in attack_stats.top_attackers %}
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 12px; color: #fca5a5; font-family: monospace; font-size: 14px;">{{ ip }}</td>
+                        <td style="padding: 12px; text-align: right; color: white; font-weight: bold;">{{ count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Attack Types -->
+    {% if attack_stats.attack_types %}
+    <div class="section-card" style="background: #1e293b; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+        <h2 style="color: white; margin-bottom: 16px; font-size: 20px;">⚔️ Attack Types</h2>
+        <div class="table-responsive">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <th style="padding: 12px; text-align: left; color: rgba(255,255,255,0.7); font-weight: 600;">Attack Type</th>
+                        <th style="padding: 12px; text-align: right; color: rgba(255,255,255,0.7); font-weight: 600;">Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attack_type, count in attack_stats.attack_types.items %}
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 12px; color: #fbbf24; font-size: 14px;">{{ attack_type }}</td>
+                        <td style="padding: 12px; text-align: right; color: white; font-weight: bold;">{{ count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Attacks -->
+    <div class="section-card" style="background: #1e293b; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+        <h2 style="color: white; margin-bottom: 16px; font-size: 20px;">📋 Recent Attack Attempts (Last 100)</h2>
+        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead style="position: sticky; top: 0; background: #1e293b;">
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <th style="padding: 12px; text-align: left; color: rgba(255,255,255,0.7); font-weight: 600;">Timestamp</th>
+                        <th style="padding: 12px; text-align: left; color: rgba(255,255,255,0.7); font-weight: 600;">IP Address</th>
+                        <th style="padding: 12px; text-align: left; color: rgba(255,255,255,0.7); font-weight: 600;">Attack Type</th>
+                        <th style="padding: 12px; text-align: left; color: rgba(255,255,255,0.7); font-weight: 600;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if attacks %}
+                        {% for attack in attacks %}
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 12px; color: rgba(255,255,255,0.6); font-size: 13px;">
+                                {{ attack.timestamp }}
+                            </td>
+                            <td style="padding: 12px; color: #fca5a5; font-family: monospace; font-size: 14px; font-weight: bold;">
+                                {{ attack.ip|default:"N/A" }}
+                            </td>
+                            <td style="padding: 12px; color: #fbbf24; font-size: 14px;">
+                                {{ attack.attack_type|default:"Unknown" }}
+                            </td>
+                            <td style="padding: 12px;">
+                                <span style="background: #dc2626; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">{{ attack.status }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" style="padding: 40px; text-align: center; color: rgba(255,255,255,0.5);">
+                                No attacks logged yet. Your server is secure! 🎉
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Blocked IPs -->
+    {% if blocked_ips %}
+    <div class="section-card" style="background: #1e293b; border-radius: 12px; padding: 24px;">
+        <h2 style="color: white; margin-bottom: 16px; font-size: 20px;">🚫 Permanently Blocked IPs (Last 50)</h2>
+        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead style="position: sticky; top: 0; background: #1e293b;">
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <th style="padding: 12px; text-align: left; color: rgba(255,255,255,0.7); font-weight: 600;">Timestamp</th>
+                        <th style="padding: 12px; text-align: left; color: rgba(255,255,255,0.7); font-weight: 600;">IP Address</th>
+                        <th style="padding: 12px; text-align: left; color: rgba(255,255,255,0.7); font-weight: 600;">Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if blocked_ips %}
+                        {% for blocked in blocked_ips %}
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 12px; color: rgba(255,255,255,0.6); font-size: 13px;">
+                                {{ blocked.timestamp }}
+                            </td>
+                            <td style="padding: 12px; color: #ef4444; font-family: monospace; font-size: 14px; font-weight: bold;">
+                                {{ blocked.ip|default:"N/A" }}
+                            </td>
+                            <td style="padding: 12px; color: #fbbf24; font-size: 14px;">
+                                {{ blocked.reason|default:"Attack Detected" }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="3" style="padding: 40px; text-align: center; color: rgba(255,255,255,0.5);">
+                                No IPs permanently blocked yet.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Info Box -->
+    <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 16px; margin-top: 24px;">
+        <p style="color: #93c5fd; margin: 0; font-size: 14px; line-height: 1.6;">
+            <strong>💡 Information:</strong> All attack attempts are automatically logged with IP addresses and permanently blocked. 
+            IPs are blocked using UFW firewall, iptables, and Fail2Ban. You can also view logs via SSH using: 
+            <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">./scripts/view_attacks.sh</code>
+        </p>
+    </div>
+</div>
+
+<style>
+    .table-responsive {
+        overflow-x: auto;
+    }
+    .table-responsive table {
+        min-width: 600px;
+    }
+</style>
+{% endblock %}

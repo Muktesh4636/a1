@@ -45,20 +45,38 @@ class AttackDetector:
     
     @staticmethod
     def detect_attack(request):
-        """Detect if request is an attack attempt"""
+        """Detect if request is an attack attempt - Enhanced for API protection"""
         attack_detected = False
         attack_type = None
         
         # Check request path
         path = request.path.lower()
-        for pattern in AttackDetector.ADMIN_SCAN_PATTERNS:
-            if pattern in path:
-                attack_detected = True
-                attack_type = 'admin_scan'
-                break
+        is_api_endpoint = path.startswith('/api/')
         
-        # Check request body for POST requests
-        if request.method == 'POST':
+        # API-specific attack patterns
+        API_ABUSE_PATTERNS = [
+            '/api/admin', '/api/user', '/api/auth', '/api/token',
+            '/api/v1/admin', '/api/v2/admin', '/api/rest/admin',
+        ]
+        
+        # Check for admin API scanning
+        if is_api_endpoint:
+            for pattern in API_ABUSE_PATTERNS:
+                if pattern in path:
+                    attack_detected = True
+                    attack_type = 'api_admin_scan'
+                    break
+        
+        # Check request path for admin scans
+        if not attack_detected:
+            for pattern in AttackDetector.ADMIN_SCAN_PATTERNS:
+                if pattern in path:
+                    attack_detected = True
+                    attack_type = 'admin_scan'
+                    break
+        
+        # Check request body for POST/PUT/PATCH requests
+        if request.method in ['POST', 'PUT', 'PATCH']:
             try:
                 body_str = str(request.body).lower()
                 
@@ -66,7 +84,7 @@ class AttackDetector:
                 for pattern in AttackDetector.SQL_INJECTION_PATTERNS:
                     if pattern in body_str:
                         attack_detected = True
-                        attack_type = 'sql_injection'
+                        attack_type = 'sql_injection' + ('_api' if is_api_endpoint else '')
                         break
                 
                 # XSS
@@ -74,7 +92,7 @@ class AttackDetector:
                     for pattern in AttackDetector.XSS_PATTERNS:
                         if pattern in body_str:
                             attack_detected = True
-                            attack_type = 'xss'
+                            attack_type = 'xss' + ('_api' if is_api_endpoint else '')
                             break
                 
                 # Command Injection
@@ -82,8 +100,37 @@ class AttackDetector:
                     for pattern in AttackDetector.COMMAND_INJECTION_PATTERNS:
                         if pattern in body_str:
                             attack_detected = True
-                            attack_type = 'command_injection'
+                            attack_type = 'command_injection' + ('_api' if is_api_endpoint else '')
                             break
+                
+                # API-specific: Check for JWT token manipulation
+                if is_api_endpoint and not attack_detected:
+                    jwt_abuse_patterns = [
+                        'none', 'null', 'undefined', 'admin', 'true',
+                        '{"alg":"none"}', '{"alg":"null"}',
+                    ]
+                    for pattern in jwt_abuse_patterns:
+                        if pattern in body_str:
+                            attack_detected = True
+                            attack_type = 'jwt_manipulation'
+                            break
+                
+                # API-specific: Check for excessive payload size (potential DoS)
+                if is_api_endpoint and len(request.body) > 1000000:  # 1MB limit
+                    attack_detected = True
+                    attack_type = 'api_payload_dos'
+            except:
+                pass
+        
+        # Check query parameters for GET requests
+        if request.method == 'GET':
+            try:
+                query_str = str(request.GET).lower()
+                for pattern in AttackDetector.SQL_INJECTION_PATTERNS:
+                    if pattern in query_str:
+                        attack_detected = True
+                        attack_type = 'sql_injection_query' + ('_api' if is_api_endpoint else '')
+                        break
             except:
                 pass
         
@@ -92,7 +139,7 @@ class AttackDetector:
             for pattern in AttackDetector.PATH_TRAVERSAL_PATTERNS:
                 if pattern in path:
                     attack_detected = True
-                    attack_type = 'path_traversal'
+                    attack_type = 'path_traversal' + ('_api' if is_api_endpoint else '')
                     break
         
         return attack_detected, attack_type
@@ -140,16 +187,16 @@ class AttackDetector:
             except:
                 pass
             
-            # Log the attack
-            AttackDetector.log_attack(ip, 'permanent_block')
+            # Log the attack (request=None for permanent blocks from other sources)
+            AttackDetector.log_attack(ip, 'permanent_block', request=None)
             
             return True
         except Exception as e:
             return False
     
     @staticmethod
-    def log_attack(ip, attack_type):
-        """Log attack attempt to file"""
+    def log_attack(ip, attack_type, request=None):
+        """Log attack attempt to file with full details - Enhanced for API attacks and VPN tracking"""
         try:
             log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
             os.makedirs(log_dir, exist_ok=True)
@@ -157,8 +204,40 @@ class AttackDetector:
             log_file = os.path.join(log_dir, 'attacks.log')
             timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
             
+            # Enhanced logging with request details
+            endpoint = request.path if request else 'unknown'
+            method = request.method if request else 'unknown'
+            is_api = endpoint.startswith('/api/') if request else False
+            
+            # Get fingerprint if available (VPN-resistant tracking)
+            fingerprint = getattr(request, '_fingerprint', None) if request else None
+            fingerprint_str = f" | Fingerprint: {fingerprint[:16]}..." if fingerprint else ""
+            
+            # Get User-Agent for device tracking
+            user_agent = request.META.get('HTTP_USER_AGENT', 'unknown')[:50] if request else 'unknown'
+            
+            # Log with IP address, attack type, endpoint, fingerprint, and timestamp
+            log_entry = f"{timestamp} | IP: {ip} | Type: {attack_type} | Endpoint: {endpoint} | Method: {method} | API: {is_api}{fingerprint_str} | User-Agent: {user_agent} | Status: BLOCKED\n"
+            
             with open(log_file, 'a') as f:
-                f.write(f"{timestamp} | IP: {ip} | Type: {attack_type}\n")
+                f.write(log_entry)
+            
+            # Also log to blocked IPs file
+            blocked_file = os.path.join(log_dir, 'blocked_ips.log')
+            with open(blocked_file, 'a') as f:
+                f.write(f"{timestamp} | IP: {ip} | Reason: {attack_type} | Endpoint: {endpoint}{fingerprint_str}\n")
+            
+            # API-specific log file
+            if is_api:
+                api_log_file = os.path.join(log_dir, 'api_attacks.log')
+                with open(api_log_file, 'a') as f:
+                    f.write(f"{timestamp} | IP: {ip} | Type: {attack_type} | Endpoint: {endpoint} | Method: {method}{fingerprint_str} | BLOCKED\n")
+            
+            # VPN-resistant fingerprint log
+            if fingerprint:
+                fingerprint_log_file = os.path.join(log_dir, 'fingerprint_attacks.log')
+                with open(fingerprint_log_file, 'a') as f:
+                    f.write(f"{timestamp} | Fingerprint: {fingerprint} | IP: {ip} | Type: {attack_type} | Endpoint: {endpoint} | BLOCKED\n")
         except:
             pass
     

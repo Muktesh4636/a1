@@ -8,6 +8,8 @@ from django.http import JsonResponse
 from django.db import transaction as db_transaction
 import redis
 import json
+import os
+from collections import Counter
 from .models import GameRound, Bet, DiceResult, GameSettings, AdminPermissions
 from accounts.models import Wallet, Transaction, DepositRequest, WithdrawRequest, User, PaymentMethod
 from accounts.player_distribution import (
@@ -152,20 +154,26 @@ def admin_login(request):
                     # Track failed logins for firewall middleware
                     failed_count = cache.get(failed_logins_key, 0) + 1
                     cache.set(failed_logins_key, failed_count, 900)  # 15 minutes
-                else:
-                    error_message = 'Invalid username or password.'
-                    # Increment failed attempt counter
-                    login_attempts = cache.get(cache_key, 0) + 1
-                    cache.set(cache_key, login_attempts, 900)  # 15 minutes
-                    # Track failed logins for firewall middleware
-                    failed_count = cache.get(failed_logins_key, 0) + 1
-                    cache.set(failed_logins_key, failed_count, 900)  # 15 minutes
                     
                     # SECURITY: If too many failed attempts, permanently block IP
-                    if failed_count >= 50:
+                    if failed_count >= brute_force_threshold:
                         from dice_game.attack_detection import AttackDetector
                         AttackDetector.block_ip_permanently(client_ip)
                         error_message = 'Too many failed login attempts. Your IP has been permanently blocked.'
+            else:
+                error_message = 'Invalid username or password.'
+                # Increment failed attempt counter
+                login_attempts = cache.get(cache_key, 0) + 1
+                cache.set(cache_key, login_attempts, 900)  # 15 minutes
+                # Track failed logins for firewall middleware
+                failed_count = cache.get(failed_logins_key, 0) + 1
+                cache.set(failed_logins_key, failed_count, 900)  # 15 minutes
+                
+                # SECURITY: If too many failed attempts, permanently block IP
+                if failed_count >= brute_force_threshold:
+                    from dice_game.attack_detection import AttackDetector
+                    AttackDetector.block_ip_permanently(client_ip)
+                    error_message = 'Too many failed login attempts. Your IP has been permanently blocked.'
         else:
             error_message = 'Please provide both username and password.'
     
@@ -2028,8 +2036,119 @@ def delete_payment_method(request, pk):
             messages.success(request, f'Payment method "{name}" deleted successfully!')
         except Exception as e:
             messages.error(request, f'Error deleting payment method: {str(e)}')
-            
+    
     return redirect('payment_methods')
+
+
+@admin_required
+def attack_logs(request):
+    """View attack logs with attacker IP addresses"""
+    if not is_super_admin(request.user):
+        messages.error(request, 'Only super admins can view attack logs.')
+        return redirect('admin_dashboard')
+    
+    attack_log_file = os.path.join(settings.BASE_DIR, 'logs', 'attacks.log')
+    blocked_log_file = os.path.join(settings.BASE_DIR, 'logs', 'blocked_ips.log')
+    
+    attacks = []
+    blocked_ips = []
+    attack_stats = {
+        'total_attacks': 0,
+        'unique_ips': 0,
+        'top_attackers': [],
+        'attack_types': {},
+    }
+    
+    # Read attack log
+    if os.path.exists(attack_log_file):
+        try:
+            with open(attack_log_file, 'r') as f:
+                lines = f.readlines()
+                attack_stats['total_attacks'] = len(lines)
+                
+                # Extract IPs and attack types, and parse attack entries
+                ips = []
+                attack_types = []
+                parsed_attacks = []
+                
+                for line in lines[-100:]:  # Last 100 attacks
+                    line = line.strip()
+                    if not line:
+                        continue
+                    
+                    # Parse attack entry
+                    attack_entry = {
+                        'raw': line,
+                        'timestamp': '',
+                        'ip': '',
+                        'attack_type': '',
+                        'status': 'BLOCKED'
+                    }
+                    
+                    # Extract timestamp (first part before |)
+                    if ' | ' in line:
+                        parts = line.split(' | ')
+                        attack_entry['timestamp'] = parts[0] if parts else ''
+                        
+                        # Extract IP
+                        for part in parts:
+                            if part.startswith('IP: '):
+                                attack_entry['ip'] = part.replace('IP: ', '').strip()
+                                ips.append(attack_entry['ip'])
+                            elif part.startswith('Type: '):
+                                attack_entry['attack_type'] = part.replace('Type: ', '').strip()
+                                attack_types.append(attack_entry['attack_type'])
+                    
+                    parsed_attacks.append(attack_entry)
+                
+                attacks = parsed_attacks
+                attack_stats['unique_ips'] = len(set(ips))
+                attack_stats['top_attackers'] = Counter(ips).most_common(10)
+                attack_stats['attack_types'] = dict(Counter(attack_types))
+        except Exception as e:
+            messages.error(request, f'Error reading attack log: {str(e)}')
+    
+    # Read blocked IPs log
+    if os.path.exists(blocked_log_file):
+        try:
+            blocked_entries = []
+            with open(blocked_log_file, 'r') as f:
+                for line in f.readlines()[-50:]:  # Last 50 blocks
+                    line = line.strip()
+                    if not line:
+                        continue
+                    
+                    blocked_entry = {
+                        'raw': line,
+                        'timestamp': '',
+                        'ip': '',
+                        'reason': ''
+                    }
+                    
+                    if ' | ' in line:
+                        parts = line.split(' | ')
+                        blocked_entry['timestamp'] = parts[0] if parts else ''
+                        
+                        for part in parts:
+                            if part.startswith('IP: '):
+                                blocked_entry['ip'] = part.replace('IP: ', '').strip()
+                            elif part.startswith('Reason: '):
+                                blocked_entry['reason'] = part.replace('Reason: ', '').strip()
+                    
+                    blocked_entries.append(blocked_entry)
+            
+            blocked_ips = blocked_entries
+        except Exception as e:
+            pass
+    
+    context = get_admin_context(request, {
+        'attacks': attacks,
+        'blocked_ips': blocked_ips,
+        'attack_stats': attack_stats,
+        'page': 'attack_logs',
+    })
+    
+    return render(request, 'admin/attack_logs.html', context)
 
 @admin_required
 def toggle_payment_method(request, pk):

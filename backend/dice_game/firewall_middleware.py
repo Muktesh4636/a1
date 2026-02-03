@@ -121,7 +121,7 @@ class MultiLayerFirewallMiddleware(MiddlewareMixin):
         return True
     
     def detect_suspicious_activity(self, ip, request):
-        """Detect suspicious patterns and permanently block attackers"""
+        """Detect suspicious patterns and permanently block attackers - Enhanced for API protection and VPN resistance"""
         from .attack_detection import AttackDetector
         
         # Use advanced attack detection
@@ -131,9 +131,21 @@ class MultiLayerFirewallMiddleware(MiddlewareMixin):
             # PERMANENTLY block attacking IP
             AttackDetector.block_ip_permanently(ip)
             
+            # Log the attack with request details
+            AttackDetector.log_attack(ip, attack_type, request)
+            
             # Also block in cache for immediate effect
             cache.set(f'blocked_ip_{ip}', True, 31536000)  # 1 year
             cache.set(f'attack_{ip}', attack_type, 31536000)
+            
+            # VPN-RESISTANT: Mark request for fingerprint tracking
+            request._attack_detected = True
+            request._attack_type = attack_type
+            
+            # API-specific: Additional blocking for API attacks
+            if request.path.startswith('/api/'):
+                cache.set(f'api_blocked_{ip}', True, 31536000)
+                logger.error(f"API ATTACK BLOCKED: IP {ip} | Endpoint: {request.path} | Type: {attack_type}")
             
             return False
         
