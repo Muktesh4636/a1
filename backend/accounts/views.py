@@ -3,6 +3,7 @@ from rest_framework import status, generics
 from rest_framework.decorators import api_view, permission_classes, parser_classes, authentication_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth import authenticate
@@ -38,6 +39,7 @@ from .serializers import (
 )
 
 
+@csrf_exempt
 @api_view(['POST'])
 @authentication_classes([])  # Disable authentication for registration
 @permission_classes([AllowAny])
@@ -58,6 +60,7 @@ def register(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@csrf_exempt
 @api_view(['POST'])
 @authentication_classes([])  # Disable authentication for login
 @permission_classes([AllowAny])
@@ -147,6 +150,7 @@ def login(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@csrf_exempt
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def profile(request):
@@ -156,6 +160,7 @@ def profile(request):
     return Response(serializer.data)
 
 
+@csrf_exempt
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def wallet(request):
@@ -215,6 +220,7 @@ def notify_user(user, message):
     print(f"[NOTIFY] {user.username}: {message}")
 
 
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def initiate_deposit(request):
@@ -234,6 +240,7 @@ def initiate_deposit(request):
     })
 
 
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])
@@ -300,6 +307,7 @@ def extract_utr(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([AllowAny])
 @parser_classes([MultiPartParser, FormParser])
@@ -361,6 +369,7 @@ def process_payment_screenshot(request):
         return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])
@@ -423,6 +432,7 @@ def upload_deposit_proof(request):
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+@csrf_exempt
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def my_deposit_requests(request):
@@ -433,6 +443,7 @@ def my_deposit_requests(request):
     return Response(serializer.data)
 
 
+@csrf_exempt
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def pending_deposit_requests(request):
@@ -443,6 +454,7 @@ def pending_deposit_requests(request):
     return Response(serializer.data)
 
 
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def approve_deposit_request(request, pk):
@@ -489,6 +501,7 @@ def approve_deposit_request(request, pk):
     return Response(serializer.data)
 
 
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def reject_deposit_request(request, pk):
@@ -522,6 +535,7 @@ def reject_deposit_request(request, pk):
 
 # Withdraw functionality
 
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def initiate_withdraw(request):
@@ -602,6 +616,7 @@ def initiate_withdraw(request):
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+@csrf_exempt
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def my_withdraw_requests(request):
@@ -622,6 +637,7 @@ def get_payment_methods(request):
     return Response(serializer.data)
 
 
+@csrf_exempt
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def my_bank_details(request):
@@ -647,6 +663,7 @@ def my_bank_details(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@csrf_exempt
 @api_view(['DELETE', 'PUT'])
 @permission_classes([IsAuthenticated])
 def bank_detail_action(request, pk):

@@ -17,9 +17,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-this-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+DEBUG = os.getenv('DEBUG', 'False') == 'True'  # Default to False for production
 
-ALLOWED_HOSTS = ['*', 'gunduata.online', 'www.gunduata.online']  # Configure properly for production
+# Security: Only allow specific hosts
+ALLOWED_HOSTS_STR = os.getenv('ALLOWED_HOSTS', 'gunduata.online,www.gunduata.online,72.61.254.71')
+ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_STR.split(',') if host.strip()]
 
 
 # Application definition
@@ -51,14 +53,130 @@ TESSERACT_CMD = os.getenv('TESSERACT_CMD', '/opt/homebrew/bin/tesseract')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # 'dice_game.cloudflare_middleware.CloudflareOnlyMiddleware',  # SECURITY: Block direct IP access
+    # 'dice_game.anonymization_middleware.AnonymizationMiddleware',  # SECURITY: Prevent tracing
+    # 'dice_game.vpn_protection_middleware.VPNProtectionMiddleware',  # SECURITY: VPN-resistant protection
+    # 'dice_game.firewall_middleware.MultiLayerFirewallMiddleware',  # SECURITY: Multi-layer firewall
+    # 'dice_game.api_security_middleware.APISecurityMiddleware',  # SECURITY: API-specific protection
+    # 'dice_game.middleware.HideServerInfoMiddleware',  # SECURITY: Hide server info
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',  # Standard CSRF middleware
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# CSRF Settings
+CSRF_TRUSTED_ORIGINS = [
+    'https://gunduata.online',
+    'http://gunduata.online',
+    'https://www.gunduata.online',
+    'http://www.gunduata.online',
+    'https://72.61.254.71',
+    'http://72.61.254.71',
+]
+
+# CSRF Cookie Domain - None means use same domain as request
+CSRF_COOKIE_DOMAIN = None
+
+# CSRF Cookie settings (set here so they apply in both DEBUG and production)
+CSRF_COOKIE_NAME = 'csrftoken'
+CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
+CSRF_COOKIE_AGE = 31449600  # 1 year (same as session)
+CSRF_COOKIE_PATH = '/'
+# Allow CSRF to work without strict referer checking when behind proxy
+CSRF_COOKIE_SAMESITE = 'Lax'  # Set here for all environments
+
+# SECURITY: Production security settings
+if not DEBUG:
+    # HTTPS/SSL Settings
+    SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'False') == 'True'
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    
+    # HSTS (HTTP Strict Transport Security)
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # Additional security headers
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_TZ = True
+    
+    # CSRF settings for proxy setup
+    # When behind a proxy, Django needs to trust the X-Forwarded-Proto header
+    # CSRF_COOKIE_SECURE will be set based on X-Forwarded-Proto header from proxy
+    CSRF_COOKIE_SECURE = True  # Set to True when using HTTPS (proxy handles SSL)
+    CSRF_USE_SESSIONS = False  # Use cookies for CSRF token
+    CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read CSRF token (needed for AJAX)
+    # CSRF_TRUSTED_ORIGINS is already set above
+    # CSRF_COOKIE_DOMAIN is already set above
+    # Note: CSRF_COOKIE_NAME, CSRF_HEADER_NAME, CSRF_COOKIE_AGE, CSRF_COOKIE_PATH are set above
+    
+    # Session security - Enhanced for anonymity
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = True  # HTTPS only
+    SESSION_COOKIE_AGE = 3600  # 1 hour sessions
+    SESSION_SAVE_EVERY_REQUEST = False  # Don't save on every request
+    SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Clear on browser close
+    
+    # CSRF cookie settings
+    # Note: CSRF_COOKIE_HTTPONLY, CSRF_COOKIE_SECURE are set above
+    # CSRF_COOKIE_SAMESITE is set above for all environments
+    
+    # Password reset timeout (in seconds)
+    PASSWORD_RESET_TIMEOUT = 3600  # 1 hour
+    
+    # Logging - Minimize information disclosure
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'minimal': {
+                'format': '%(message)s',
+            },
+        },
+        'handlers': {
+            'file': {
+                'level': 'ERROR',  # Only log errors, not info/debug
+                'class': 'logging.handlers.RotatingFileHandler',
+                'filename': BASE_DIR / 'logs' / 'django.log',
+                'maxBytes': 10485760,  # 10MB
+                'backupCount': 5,
+                'formatter': 'minimal',
+            },
+        },
+        'loggers': {
+            'django': {
+                'handlers': ['file'],
+                'level': 'ERROR',
+                'propagate': False,
+            },
+        },
+    }
+    
+    # SECURITY: Hide server information
+    SECURE_HIDE_SERVER_INFO = True
+    
+    # Disable Django admin branding (prevents version disclosure)
+    ADMIN_URL = 'admin/'  # Change from default to make it less obvious
+    
+    # Prevent information disclosure in error pages
+    # Note: Setting to 'no-referrer' can break CSRF protection
+    # Use 'same-origin' instead to allow CSRF to work while still protecting privacy
+    SECURE_REFERRER_POLICY = 'same-origin'  # Allow referrer for same-origin requests (needed for CSRF)
+    
+    # Minimize error information
+    DEBUG_PROPAGATE_EXCEPTIONS = False
+    
+    # Don't store IP addresses in sessions
+    SESSION_SAVE_EVERY_REQUEST = False
 
 ROOT_URLCONF = 'dice_game.urls'
 
@@ -115,9 +233,24 @@ else:
     }
 
 
-# Password validation
-# Reduced restrictions as requested: Minimum 4 characters, no complexity requirements.
-AUTH_PASSWORD_VALIDATORS = []
+# Password validation - SECURITY: Strong password requirements
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 8,  # Minimum 8 characters
+        }
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
 
 
 # Internationalization
@@ -145,7 +278,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
 
-# REST Framework
+# REST Framework - SECURITY: Rate limiting and throttling
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -155,58 +288,48 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    # Rate limiting to prevent abuse
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/hour',  # Anonymous users: 100 requests per hour
+        'user': '1000/hour',  # Authenticated users: 1000 requests per hour
+        'login': '5/minute',  # Login attempts: 5 per minute
+        'bet': '60/minute',  # Betting: 60 bets per minute
+        'api': '200/hour',  # API endpoints: 200 requests per hour per IP
+    }
 }
 
-# JWT Settings
+# JWT Settings - SECURITY: Shorter token lifetimes
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=24),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),  # Reduced from 24h to 1h
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
 }
 
-# CORS Settings
+# CORS Settings - SECURITY: Restrict to specific origins
+CORS_ALLOWED_ORIGINS_STR = os.getenv(
+    'CORS_ALLOWED_ORIGINS',
+    'https://gunduata.online,https://www.gunduata.online,http://localhost:5173,http://localhost:3000'
+)
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://localhost:9001",
-    "http://localhost:9002",
-    "http://localhost:9004",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:9001",
-    "http://127.0.0.1:9002",
-    "http://127.0.0.1:9004",
+    origin.strip() for origin in CORS_ALLOWED_ORIGINS_STR.split(',') if origin.strip()
 ]
 
+# Only allow credentials from trusted origins
 CORS_ALLOW_CREDENTIALS = True
 
-# CSRF Settings
-CSRF_TRUSTED_ORIGINS = [
-    "http://gunduata.online",
-    "https://gunduata.online",
-    "http://www.gunduata.online",
-    "https://www.gunduata.online",
-    "http://159.198.46.36",
-    "http://localhost:8009",
-    "http://127.0.0.1:8009",
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://localhost:9001",
-    "http://localhost:9002",
-    "http://localhost:9004",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:9001",
-    "http://127.0.0.1:9002",
-    "http://127.0.0.1:9004",
-]
-
-# CSRF Cookie Settings
-CSRF_COOKIE_SECURE = False  # Set to True in production with HTTPS
-CSRF_COOKIE_HTTPONLY = False
-CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_USE_SESSIONS = False
+# CORS Security: Block all other origins
+CORS_ALLOW_ALL_ORIGINS = False
 
 # Redis Configuration
 REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
@@ -296,73 +419,6 @@ else:
             'BACKEND': 'channels.layers.InMemoryChannelLayer',
         },
     }
-
-# Logging Configuration
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
-        },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-        'structured': {
-            'format': 'timestamp="{asctime}" level="{levelname}" logger="{name}" module="{module}" message="{message}"',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'level': 'INFO',
-            'class': 'logging.StreamHandler',
-            'formatter': 'structured',
-        },
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'django.log',
-            'formatter': 'structured',
-        },
-        'game_file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'game.log',
-            'formatter': 'structured',
-        },
-        'accounts_file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'accounts.log',
-            'formatter': 'structured',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'accounts': {
-            'handlers': ['console', 'accounts_file'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'game': {
-            'handlers': ['console', 'game_file'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-    },
-}
-
-# Create logs directory if it doesn't exist
-LOGS_DIR = BASE_DIR / 'logs'
-if not LOGS_DIR.exists():
-    os.makedirs(LOGS_DIR)
 
 # Game Settings
 GAME_SETTINGS = {

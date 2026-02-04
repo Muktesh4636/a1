@@ -41,6 +41,13 @@ class GameRound(models.Model):
     def __str__(self):
         return f"Round {self.round_id} - {self.status}"
 
+    @property
+    def dice_result_list(self):
+        """Returns dice_result as a list of strings"""
+        if not self.dice_result:
+            return []
+        return [r.strip() for r in str(self.dice_result).split(',') if r.strip()]
+
 
 class Bet(models.Model):
     """Bet model"""

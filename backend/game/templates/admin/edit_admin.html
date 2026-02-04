@@ -329,6 +329,11 @@
                         <input type="checkbox" id="can_view_admin_management" name="can_view_admin_management" {% if permissions.can_view_admin_management %}checked{% endif %}>
                         <label for="can_view_admin_management">👨‍💼 Admin Management</label>
                     </div>
+
+                    <div class="permission-item">
+                        <input type="checkbox" id="can_manage_payment_methods" name="can_manage_payment_methods" {% if permissions.can_manage_payment_methods %}checked{% endif %}>
+                        <label for="can_manage_payment_methods">🏦 Payment Methods</label>
+                    </div>
                 </div>
 
                 <div class="note">

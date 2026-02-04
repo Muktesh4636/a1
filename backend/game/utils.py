@@ -1,8 +1,83 @@
 import random
+import json
 from collections import Counter
 from django.utils import timezone
 from django.conf import settings
 from .models import GameRound, GameSettings
+
+
+def get_current_round_state(redis_client):
+    """
+    Get the current round state from Redis or Database.
+    Handles staleness checks and provides a consistent interface.
+    Returns: (round_obj, timer, status, round_data_dict)
+    """
+    round_obj = None
+    timer = 0
+    status = 'WAITING'
+    round_data = None
+
+    if redis_client:
+        try:
+            round_data_raw = redis_client.get('current_round')
+            if round_data_raw:
+                round_data = json.loads(round_data_raw)
+                
+                # Check for staleness
+                is_stale = False
+                if 'start_time' in round_data:
+                    from datetime import datetime
+                    try:
+                        start_time = datetime.fromisoformat(round_data['start_time'])
+                        if timezone.is_aware(timezone.now()) and not timezone.is_aware(start_time):
+                            start_time = timezone.make_aware(start_time)
+                        
+                        elapsed = (timezone.now() - start_time).total_seconds()
+                        round_end_time = get_game_setting('ROUND_END_TIME', 80)
+                        if elapsed > round_end_time + 10:  # 10s buffer
+                            is_stale = True
+                    except (ValueError, TypeError):
+                        pass
+                
+                if not is_stale:
+                    timer = int(redis_client.get('round_timer') or '0')
+                    status = round_data.get('status', 'WAITING')
+                    try:
+                        round_obj = GameRound.objects.get(round_id=round_data['round_id'])
+                    except GameRound.DoesNotExist:
+                        pass
+                else:
+                    # Clear stale Redis data
+                    redis_client.delete('current_round')
+                    redis_client.delete('round_timer')
+                    round_data = None
+        except Exception:
+            pass
+
+    # Fallback to database
+    if not round_obj:
+        round_obj = GameRound.objects.order_by('-start_time').first()
+        if round_obj:
+            status = round_obj.status
+            if round_obj.start_time:
+                elapsed = (timezone.now() - round_obj.start_time).total_seconds()
+                timer = int(elapsed) % get_game_setting('ROUND_END_TIME', 80)
+            
+            # Reconstruct round_data dict for consistency
+            round_data = {
+                'round_id': round_obj.round_id,
+                'status': round_obj.status,
+                'dice_1': round_obj.dice_1,
+                'dice_2': round_obj.dice_2,
+                'dice_3': round_obj.dice_3,
+                'dice_4': round_obj.dice_4,
+                'dice_5': round_obj.dice_5,
+                'dice_6': round_obj.dice_6,
+                'dice_result': round_obj.dice_result,
+                'dice_result_list': round_obj.dice_result_list,
+            }
+
+    return round_obj, timer, status, round_data
 
 
 def generate_random_dice_values():
@@ -14,34 +89,27 @@ def generate_random_dice_values():
 
 def determine_winning_number(dice_values):
     """
-    Determine the winning number for display.
+    Determine the winning number(s) for display.
     Rule: A number must appear at least 2 times to win.
-    If multiple numbers win, only 1 is returned for display.
+    Returns all winning numbers as a comma-separated string.
     """
     if not dice_values:
         return None
     
+    # Convert all values to int to ensure consistent counting
+    try:
+        dice_values = [int(v) for v in dice_values if v is not None]
+    except (ValueError, TypeError):
+        pass
+        
     counts = Counter(dice_values)
     # Find numbers that appeared 2 or more times
-    winners = [num for num, count in counts.items() if count >= 2]
+    winners = sorted([num for num, count in counts.items() if count >= 2])
     
     if not winners:
         return None
         
-    # Find the maximum frequency among winners
-    max_freq = max(counts[num] for num in winners)
-    
-    # Get all numbers that have this maximum frequency
-    top_winners = [num for num in winners if counts[num] == max_freq]
-    
-    # If there's a tie, pick only one. 
-    # Since "there is no highest number rule", we'll just pick the first one 
-    # that appeared in the original dice roll for consistency.
-    for val in dice_values:
-        if val in top_winners:
-            return str(val)
-            
-    return str(top_winners[0])
+    return ", ".join(map(str, winners))
 
 
 def apply_dice_values_to_round(round_obj, dice_values):

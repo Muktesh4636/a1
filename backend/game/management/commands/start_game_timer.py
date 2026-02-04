@@ -417,11 +417,8 @@ class Command(BaseCommand):
                     
                     # Auto-roll if dice_result is missing OR if any individual dice values are missing
                     # Check when timer >= dice_result_time (not just ==) to handle missed checks
-                    if timer >= dice_result_time and (not round_obj.dice_result or dice_values_missing):
-                        # Track if we just auto-rolled to avoid duplicate messages
-                        just_rolled = False
-                        
-                        # Only auto-roll if values are actually missing (avoid re-rolling every second)
+                    if timer >= dice_result_time:
+                        # If values are missing, auto-roll
                         if not round_obj.dice_result or dice_values_missing:
                             # Check dice mode – regardless of mode, ensure dice roll happens
                             dice_mode = get_dice_mode()
@@ -435,7 +432,6 @@ class Command(BaseCommand):
                                 round_obj.result_time = timezone.now()
                             round_data['dice_result'] = result
                             dice_values_for_broadcast = dice_values
-                            just_rolled = True
 
                             # CRITICAL: Save round_obj to database to persist dice values
                             round_obj.save()
@@ -455,8 +451,23 @@ class Command(BaseCommand):
                             logger.info(f"Manual mode fallback: Auto-rolling at {timer}s for round {round_obj.round_id}: Result={result}")
                             self.stdout.write(self.style.WARNING(f'⚠️ Manual mode fallback: No admin input detected by {timer}s, auto-rolling result {result}'))
                         
-                        # If we didn't just roll, ensure dice values are available for broadcast
-                        if not just_rolled:
+                        # If dice were already set (e.g., by admin pre-set), but payouts haven't been calculated for this round
+                        # We use the dice_result_sent lock to ensure this only runs once at dice_result_time
+                        elif timer == dice_result_time:
+                            # Extract dice values and calculate payouts for the pre-set dice
+                            existing_result = round_obj.dice_result
+                            dice_values_for_payout = [
+                                getattr(round_obj, f'dice_{i}') for i in range(1, 7)
+                            ]
+                            
+                            if all(v is not None for v in dice_values_for_payout):
+                                calculate_payouts(round_obj, dice_result=existing_result, dice_values=dice_values_for_payout)
+                                self.stdout.write(self.style.SUCCESS(f'💰 Payouts calculated for pre-set dice at {timer}s: {existing_result}'))
+                            
+                            dice_values_for_broadcast = dice_values_for_payout
+
+                        # Ensure dice values are available for broadcast if not already set
+                        if dice_values_for_broadcast is None:
                             existing_result = round_obj.dice_result
                             dice_values_for_broadcast = extract_dice_values(
                                 round_obj, round_data, fallback=existing_result

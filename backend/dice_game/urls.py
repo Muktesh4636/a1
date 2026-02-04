@@ -6,12 +6,8 @@ from django.contrib import admin
 from django.urls import path, re_path
 from django.conf import settings
 from django.conf.urls.static import static
-from django.shortcuts import redirect
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 from . import views as project_views
-
-def redirect_to_admin_dashboard(request):
-    return redirect('/game-admin/dashboard/')
 
 # Import all views
 from accounts import views as accounts_views
@@ -21,7 +17,6 @@ from game import admin_views as game_admin_views
 urlpatterns = [
     # Admin (must come before catch-all)
     path('admin/', admin.site.urls),
-    path('game-admin/', redirect_to_admin_dashboard),
     path('api/', project_views.api_root, name='api_root'),
     
     # Auth endpoints (api/auth/)
@@ -62,6 +57,8 @@ urlpatterns = [
     path('api/game/settings/', game_views.game_settings_api, name='game_settings_api'),
     
     # Game admin endpoints (game-admin/)
+    # Base game-admin path - redirect to login or dashboard based on auth status
+    path('game-admin/', game_admin_views.admin_login, name='game_admin_root'),
     path('game-admin/login/', game_admin_views.admin_login, name='admin_login'),
     path('game-admin/logout/', game_admin_views.admin_logout, name='admin_logout'),
     path('game-admin/dashboard/', game_admin_views.admin_dashboard, name='admin_dashboard'),
@@ -103,9 +100,13 @@ urlpatterns = [
     # Serve React static assets (assets/*)
     re_path(r'^assets/.*$', project_views.serve_react_app, name='react_assets'),
     
+    # Root path - serve React app (must come before catch-all)
+    path('', project_views.serve_react_app, name='root'),
+    
     # Catch-all route for React app (must be last)
     # This will serve the React app for all routes not matched above
-    re_path(r'^(?!api/|admin/|game-admin/|static/|media/|ws/).*$', project_views.serve_react_app, name='react_app'),
+    # Updated regex to properly match all paths except API/admin/static/media/ws/assets
+    re_path(r'^(?!api/|admin/|game-admin/|static/|media/|ws/|assets/).*', project_views.serve_react_app, name='react_app'),
 ]
 
 # Serve static files in development

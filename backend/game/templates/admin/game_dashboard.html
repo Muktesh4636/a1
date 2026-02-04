@@ -496,7 +496,7 @@
         // Start client-side timer for continuous countdown
         function startClientSideTimer() {
             if (clientSideTimer) {
-                clearInterval(clientSideTimer);
+                return; // Already running
             }
             const roundEndTime = {{ round_end_time|default:80 }};
             clientSideTimer = setInterval(function() {
@@ -571,9 +571,10 @@
                 if (data.timer !== undefined) {
                     const newTimer = parseInt(data.timer) || 1;
                     // Only update if timer changed significantly (to avoid jitter)
-                    if (Math.abs(currentTimer - newTimer) > 3 || !clientSideTimer) {
+                    if (Math.abs(currentTimer - newTimer) > 2 || newTimer < currentTimer || !clientSideTimer) {
                         currentTimer = newTimer;
-                        // Restart client-side timer to sync with server
+                        updateTimerDisplay();
+                        // Ensure client-side timer is running
                         startClientSideTimer();
                         console.log('🔄 Timer synced via WebSocket:', currentTimer);
                     }

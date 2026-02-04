@@ -66,7 +66,7 @@
     </div>
     {% endif %}
     
-    {% if is_super_admin or admin_permissions.can_view_players or admin_permissions.can_view_admin_management or admin_permissions.can_view_game_settings or admin_permissions.can_manage_payment_methods %}
+    {% if is_super_admin or admin_permissions.can_view_players or admin_permissions.can_view_admin_management or admin_permissions.can_view_game_settings %}
     <div class="menu-section">
         <div class="menu-section-title">SYSTEM</div>
         <ul class="sidebar-menu">
@@ -93,11 +93,11 @@
                 <span class="menu-icon">🏦</span> Payment Methods
             </a></li>
             {% endif %}
+
             
         </ul>
     </div>
     {% endif %}
-</div>
 </div>
 
 <!-- Admin Real-time Notifications -->
@@ -334,6 +334,10 @@
 
             // Click to view
             notification.addEventListener('click', () => {
+                const sidebarWrapper = document.querySelector('.sidebar-menu-wrapper');
+                if (sidebarWrapper) {
+                    localStorage.setItem('sidebarScrollPos', sidebarWrapper.scrollTop);
+                }
                 window.location.href = redirectUrl;
             });
 
@@ -431,5 +435,35 @@
         {% if user.is_staff %}
         connectNotificationSocket();
         {% endif %}
+    })();
+
+    // Sidebar Scroll Position Preservation
+    (function() {
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarWrapper = document.querySelector('.sidebar-menu-wrapper');
+            if (sidebarWrapper) {
+                // Restore scroll position on page load
+                const savedScrollPos = localStorage.getItem('sidebarScrollPos');
+                if (savedScrollPos) {
+                    sidebarWrapper.scrollTop = parseInt(savedScrollPos);
+                }
+
+                // Save scroll position before navigation
+                const sidebarLinks = sidebarWrapper.querySelectorAll('a');
+                sidebarLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        localStorage.setItem('sidebarScrollPos', sidebarWrapper.scrollTop);
+                    });
+                });
+
+                // Also save on form submissions that navigate away
+                const forms = document.querySelectorAll('form');
+                forms.forEach(form => {
+                    form.addEventListener('submit', function() {
+                        localStorage.setItem('sidebarScrollPos', sidebarWrapper.scrollTop);
+                    });
+                });
+            }
+        });
     })();
 </script>

@@ -208,21 +208,70 @@
                            placeholder="Confirm password">
                 </div>
 
-                <div class="form-group" style="margin-bottom: 32px;">
-                    <label style="display: block; margin-bottom: 12px; font-weight: 600; color: #374151;">Admin Type *</label>
-                    <div style="display: flex; gap: 16px;">
-                        <label style="flex: 1; padding: 16px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: white;">
-                            <input type="radio" name="admin_type" value="admin" required style="margin-right: 8px;">
-                            <span style="font-weight: 600; color: #374151;">👔 Admin</span>
-                            <br>
-                            <span style="font-size: 14px; color: #6b7280;">Can manage game settings and view reports</span>
-                        </label>
-                        <label style="flex: 1; padding: 16px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: white;">
-                            <input type="radio" name="admin_type" value="super_admin" required style="margin-right: 8px;">
-                            <span style="font-weight: 600; color: #374151;">👑 Super Admin</span>
-                            <br>
-                            <span style="font-size: 14px; color: #6b7280;">Full system access including user management</span>
-                        </label>
+                <div class="form-group" style="margin-bottom: 32px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
+                    <h2 style="font-size: 20px; margin-bottom: 16px; color: #1a202c;">🔐 Menu Permissions</h2>
+                    <p style="color: #718096; margin-bottom: 20px; font-size: 14px;">Select which menu options this admin can access:</p>
+                    
+                    <div class="permissions-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+                        <div class="permission-item" style="display: flex; align-items: center; padding: 12px; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            <input type="checkbox" id="can_view_dashboard" name="can_view_dashboard" checked style="width: 18px; height: 18px; margin-right: 12px;">
+                            <label for="can_view_dashboard" style="margin: 0; font-weight: 500; cursor: pointer;">📊 Dashboard</label>
+                        </div>
+
+                        <div class="permission-item" style="display: flex; align-items: center; padding: 12px; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            <input type="checkbox" id="can_control_dice" name="can_control_dice" checked style="width: 18px; height: 18px; margin-right: 12px;">
+                            <label for="can_control_dice" style="margin: 0; font-weight: 500; cursor: pointer;">🎯 Dice Control</label>
+                        </div>
+
+                        <div class="permission-item" style="display: flex; align-items: center; padding: 12px; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            <input type="checkbox" id="can_view_recent_rounds" name="can_view_recent_rounds" checked style="width: 18px; height: 18px; margin-right: 12px;">
+                            <label for="can_view_recent_rounds" style="margin: 0; font-weight: 500; cursor: pointer;">🔄 Recent Rounds</label>
+                        </div>
+
+                        <div class="permission-item" style="display: flex; align-items: center; padding: 12px; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            <input type="checkbox" id="can_view_all_bets" name="can_view_all_bets" checked style="width: 18px; height: 18px; margin-right: 12px;">
+                            <label for="can_view_all_bets" style="margin: 0; font-weight: 500; cursor: pointer;">💰 All Bets</label>
+                        </div>
+
+                        <div class="permission-item" style="display: flex; align-items: center; padding: 12px; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            <input type="checkbox" id="can_view_wallets" name="can_view_wallets" checked style="width: 18px; height: 18px; margin-right: 12px;">
+                            <label for="can_view_wallets" style="margin: 0; font-weight: 500; cursor: pointer;">💳 Wallets</label>
+                        </div>
+
+                        <div class="permission-item" style="display: flex; align-items: center; padding: 12px; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            <input type="checkbox" id="can_view_players" name="can_view_players" checked style="width: 18px; height: 18px; margin-right: 12px;">
+                            <label for="can_view_players" style="margin: 0; font-weight: 500; cursor: pointer;">👥 Players</label>
+                        </div>
+
+                        <div class="permission-item" style="display: flex; align-items: center; padding: 12px; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            <input type="checkbox" id="can_view_deposit_requests" name="can_view_deposit_requests" checked style="width: 18px; height: 18px; margin-right: 12px;">
+                            <label for="can_view_deposit_requests" style="margin: 0; font-weight: 500; cursor: pointer;">📥 Deposit Requests</label>
+                        </div>
+
+                        <div class="permission-item" style="display: flex; align-items: center; padding: 12px; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            <input type="checkbox" id="can_view_withdraw_requests" name="can_view_withdraw_requests" checked style="width: 18px; height: 18px; margin-right: 12px;">
+                            <label for="can_view_withdraw_requests" style="margin: 0; font-weight: 500; cursor: pointer;">💸 Withdraw Requests</label>
+                        </div>
+
+                        <div class="permission-item" style="display: flex; align-items: center; padding: 12px; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            <input type="checkbox" id="can_view_transactions" name="can_view_transactions" checked style="width: 18px; height: 18px; margin-right: 12px;">
+                            <label for="can_view_transactions" style="margin: 0; font-weight: 500; cursor: pointer;">📋 Reports</label>
+                        </div>
+
+                        <div class="permission-item" style="display: flex; align-items: center; padding: 12px; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            <input type="checkbox" id="can_view_game_settings" name="can_view_game_settings" style="width: 18px; height: 18px; margin-right: 12px;">
+                            <label for="can_view_game_settings" style="margin: 0; font-weight: 500; cursor: pointer;">⏱️ Game Settings</label>
+                        </div>
+
+                        <div class="permission-item" style="display: flex; align-items: center; padding: 12px; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            <input type="checkbox" id="can_view_admin_management" name="can_view_admin_management" style="width: 18px; height: 18px; margin-right: 12px;">
+                            <label for="can_view_admin_management" style="margin: 0; font-weight: 500; cursor: pointer;">👨‍💼 Admin Management</label>
+                        </div>
+
+                        <div class="permission-item" style="display: flex; align-items: center; padding: 12px; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            <input type="checkbox" id="can_manage_payment_methods" name="can_manage_payment_methods" checked style="width: 18px; height: 18px; margin-right: 12px;">
+                            <label for="can_manage_payment_methods" style="margin: 0; font-weight: 500; cursor: pointer;">🏦 Payment Methods</label>
+                        </div>
                     </div>
                 </div>
 
