@@ -2064,16 +2064,23 @@ def delete_payment_method(request, pk):
     if not has_menu_permission(request.user, 'payment_methods'):
         messages.error(request, 'You do not have permission to manage payment methods.')
         return redirect('admin_dashboard')
-    
+
     if request.method == 'POST':
         method = get_object_or_404(PaymentMethod, pk=pk)
         name = method.name
+
+        # Prevent deletion of default payment methods
+        default_methods = ['Bank Transfer', 'Google Pay', 'PhonePe', 'Paytm', 'UPI']
+        if name in default_methods:
+            messages.error(request, f'Cannot delete default payment method "{name}". You can only deactivate it.')
+            return redirect('payment_methods')
+
         try:
             method.delete()
             messages.success(request, f'Payment method "{name}" deleted successfully!')
         except Exception as e:
             messages.error(request, f'Error deleting payment method: {str(e)}')
-    
+
     return redirect('payment_methods')
 
 
